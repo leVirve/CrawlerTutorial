@@ -134,7 +134,15 @@ control = soup.find('div', 'pull-right').find_all('a', 'btn')
 
 而我們需要的是`上一頁`的功能，為什麼呢？因為 PTT 是最新的文章顯示在前面啊～所以要挖資料必須往前翻。
 
-另外，或許會發現怎麼前面的程式有時候會出錯啊？！去看看網頁板發現，原來就是當該頁面中有文章被刪除的時候，因為網頁上的 `＜本文已被刪除＞` 這個元素的原始碼 `結構` 和原本不一樣哇！所以我們用 `BeautifulSoup` 生一個 `<a>` 元素來替代，方便後面顯示存取時使用。
+那怎麼使用呢？先去抓出 `control` 中第二個 (index: [1]) 的 `href`，然後他可能長這樣 `/bbs/movie/index3237.html`；而完整的網址 (URL) 必須要有 `https://www.ptt.cc/` 開頭，所以用 `urljoin()` 把上一頁連結和新的 link 比對並合併成完整的 URL！
+
+```python
+prev_link = control[1].get('href')
+page_url = urllib.parse.urljoin(INDEX, prev_link)
+```
+
+
+另外，或許會發現怎麼前面的程式有時候會出錯啊？！去看看網頁板發現，原來就是當該頁面中有文章被刪除的時候，因為網頁上的 `＜本文已被刪除＞` 這個元素的原始碼 `結構` 和原本不一樣哇！所以我們用 `BeautifulSoup` 生一個 `<a>` 元素來替代，方便後面存取時使用 (避免 title 和 link 的地方對 `None` 存取，產生上述提到的錯誤)。
 
 ```python
 
@@ -146,10 +154,46 @@ NOT_EXIST = BeautifulSoup('<a>本文已被刪除</a>', 'lxml').a
 meta = article.find('div', 'title').find('a') or NOT_EXIST
 ```
 
+現在我們將函式重新定義，讓：
+- `get_posts_on_page(url)`:
+抓取一頁中所有的文章 metadata (很潮的`後設資料`)，並回傳一串 `key-value` 類型的資料。
+- `get_pages(num)`:
+抓取最新的 num 個頁面，並指派 `get_posts_on_page` 去抓每頁面中的資料，把每一串資料合併成一大串後回傳。
+
+```python
+# 每筆資料長這樣子，dict() 類型資料：key-value pairs data
+{
+    'title': meta.getText().strip(),
+    'link': meta.get('href'),
+    'push': article.find('div', 'nrec').getText(),
+    'date': article.find('div', 'date').getText(),
+    'author': article.find('div', 'author').getText(),
+}
+```
+
+而 `get_posts_on_page(url)` 和 `get_pages(num)` 回傳的就是這樣的一串資料：
+```python
+[
+{'date': ' 9/07', 'author': 'zkow', 'title': 'Fw: [新聞] 小貝進好萊塢拍電影啦！', 'push': '', 'link': '/bbs/movie/M.1441633014.A.B4F.html'},
+{'date': ' 9/07', 'author': 'catlover7', 'title': '關於我的少女時代小疑問', 'push': '2', 'link': '/bbs/movie/M.1441633103.A.735.html'},
+{'date': ' 9/07', 'author': 'cake10414', 'title': '[贈序號] 贈Ez訂app電影68折優待序號(已發出)', 'push': '', 'link': '/bbs/movie/M.1441633338.A.235.html'},
+{'author': 'soulx', 'date': ' 9/07', 'push': '4', 'title': '[新聞] 侯孝賢：「一個導演，沒有自覺，就不用玩', 'link': '/bbs/movie/M.1441633354.A.961.html'},
+{'author': 'Takuri', 'date': ' 9/07', 'push': '', 'title': '[請益] 倖存者（The Remaining)的結局', 'link': '/bbs/movie/M.1441636396.A.D64.html'},
+...
+]
+```
+
+
+附上**crawler_4.py 完整程式碼**
+
+另外要說明的是 `from utils import pretty_print`，把剛剛 **crawler_3.py** 那個漂亮的輸出功能數十行的程式碼放到同目錄底下的新檔案 `utils.py` 中 (檔案名字你喜歡就好，只要記得 `from xxx import pretty_print` 要記得一起改)，然後在這邊 `import` (相當於 C語言中的 include ) 就能繼續沿用功能！
+
 ```python
 import requests
 import urllib.parse
 from bs4 import BeautifulSoup
+
+from utils import pretty_print
 
 url = 'https://www.ptt.cc/bbs/movie/index.html'
 NOT_EXIST = BeautifulSoup('<a>本文已被刪除</a>', 'lxml').a
@@ -183,15 +227,17 @@ def get_pages(num):
     all_posts = list()
     for i in range(num):
         all_posts += get_posts_on_page(page_url)
-        prev_link = control[1]['href']
+        prev_link = control[1].get('href')
         page_url = urllib.parse.urljoin(index_url, prev_link)
     return all_posts
 
 
-from utils import pretty_print
 for post in get_pages(2):
     pretty_print(post['push'], post['title'], post['date'], post['author'])
 ```
 
-以上就是基本的爬蟲教學課程。
+**上面的程式碼都在 `src/` 中可以找到！**
+
+以上就是基本的爬蟲入門教學～還望各位看官喜歡
+
 謝謝觀賞～

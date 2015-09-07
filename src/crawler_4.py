@@ -36,12 +36,12 @@ def get_pages(num):
     all_posts = list()
     for i in range(num):
         all_posts += get_posts_on_page(page_url)
-        prev_link = control[1]['href']
+        prev_link = control[1].get('href')
         page_url = urllib.parse.urljoin(INDEX, prev_link)
     return all_posts
 
 
 if __name__ == '__main__':
-    pages = 5
+    pages = 1
     for post in get_pages(pages):
         pretty_print(post['push'], post['title'], post['date'], post['author'])
