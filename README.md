@@ -1,25 +1,32 @@
 # CrawlerTutorial
 
-Python 實際演練：在網路上養了一隻蟲
+＜Python 實際演練＞：
+在網路上養了一隻蟲，以下就用 PTT 的電影版文章作為我們的爬蟲目標囉！
 
-#安裝相依套件
+#相依套件
 首先使用 pip 來安裝等會要用的套件，
 - requests用來取代內建 urllib 模組，就是比原本的好用！
-- lxml用來解析 html/xml，一樣是比原生的有更多優點！
 - beautifulsoup 用來分析與抓取html中的元素
+- (選用) lxml用來解析 html/xml，一樣是比原生的有更多優點！
 
 ```
 pip install requests
 pip install beautifulsoup
 pip install lxml
+
+(if on debain/ubuntu, you may also...)
+sudo apt-get install python3-lxml
+
+(if on windows, go find lxml wheel, then...)
+pip install lxml‑3.4.4‑cp34‑none‑win32.whl
 ```
 
-以下就用 PTT 的電影版文章作為我們的爬衝目標囉，嘿嘿！
+![Unofficial Windows Binaries for lxml](http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml)
 
 #第一步：To see is to retrieve，所看即所抓
 
-使用 `requests.get()` 方法來取得網址中的原始碼。
-而傳回來的結果是一個包裝起來的物件，真正的純文字原始碼在 `response.text` 中
+使用 `requests.get()` 函式模擬 HTTP GET 方法來「瀏覽」網頁，並取得網址中的原始碼。
+回傳結果是一個 `Beautifulsoup` 包裝起來的物件，而我們真正目標是取得頁面原始碼：真正的純文字原始碼在 `response.text` 中。
 
 ```python
 import requests
@@ -31,12 +38,10 @@ print(response.text)
 
 #第二步：Text interpretation，說說看你看到了什麼？
 
-用 `beautifulsoup` 來解析剛剛抓到的原始碼。
-`BeautifulSoup()` 的第二個參數則放入 `lxml` 讓他使用我們剛剛安裝的 lxml 來解析。
+用 `Beautifulsoup` 來分析剛剛抓到的原始碼，在 `BeautifulSoup()` 的建構式第二個參數放入 `lxml` 讓他使用我們剛剛安裝的 lxml 來解析。
+(p.s. 若剛剛未選擇安裝 `lxml`，則用 Python 內建的 `html.parser` 解析即可。)
 
-而藉由我們自行打開網頁原始碼得知 PTT 網頁版中，
-每一篇文章的標題訊息皆放在 `class="r-ent"` 的 `div` 標籤裡。
-這裡我們使用到 `find_all()` 方法來指定抓取的目標，尋找之後的結果是一串(`<type: list>`) 文章標題資訊。
+而藉由我們打開瀏覽器查看網頁原始碼 (可用`F12` 開發者工具) 得知 PTT 網頁版中，每一篇文章的標題訊息皆放在 `class="r-ent"` 的 `div` 標籤裡。這裡我們使用到 `find_all()` 方法來指定抓取的目標，尋找之後的結果是一串文章列表資訊。
 
 ```python
 import requests
@@ -51,11 +56,10 @@ print(articles)
 
 #第三步：所以那標題資訊到底怎麼用？
 
-剛剛說過 `find_all()` 回傳符合的結果，而這串結果是個 `list()` 型態的東西，
-所以我們用 `for loop` 來一個一個印出來看看。
+剛剛說過 `find_all()` 回傳符合的結果，而這串結果是個 `list` 型態的東西，所以我們用 `for loop` 來一個一個印出來看看。
 
-而因為 html 本來就是具有階層式的標記語言，
-所有的資料都是用 `觀察法` 判斷到底放在哪個標籤、哪一階層裡（觀察系玩家4ni），以下就不多加贅述！
+而因為 html 本來就是具有階層式的標記語言，所有的資料都是用 `觀察法`判斷到底放在哪個標籤、哪一階層裡（觀察系玩家4ni），以下就不多加贅述！
+示範內容抓出：推文數、標題名稱、作者、發文日期和文章網址。
 
 ```python
 import requests
@@ -79,7 +83,7 @@ for article in articles:
 ```
 
 ### 執行結果 (此圖輸出經過特殊處理)
-![crawler_3_snap](https://raw.github.com/leVirve/CrawlerTutorial/crawler_3_snap.png)
+![crawler_3_snap](https://raw.github.com/leVirve/CrawlerTutorial/master/crawler_3_snap.png)
 
 #第四步：現在 big data 時代捏，都嘛一次要大筆資料！
 
