@@ -174,11 +174,13 @@ meta = article.find('div', 'title').find('a') or NOT_EXIST
 而 `get_posts_on_page(url)` 和 `get_pages(num)` 回傳的就是這樣的一串資料：
 ```python
 [
-{'date': ' 9/07', 'author': 'zkow', 'title': 'Fw: [新聞] 小貝進好萊塢拍電影啦！', 'push': '', 'link': '/bbs/movie/M.1441633014.A.B4F.html'},
-{'date': ' 9/07', 'author': 'catlover7', 'title': '關於我的少女時代小疑問', 'push': '2', 'link': '/bbs/movie/M.1441633103.A.735.html'},
-{'date': ' 9/07', 'author': 'cake10414', 'title': '[贈序號] 贈Ez訂app電影68折優待序號(已發出)', 'push': '', 'link': '/bbs/movie/M.1441633338.A.235.html'},
-{'author': 'soulx', 'date': ' 9/07', 'push': '4', 'title': '[新聞] 侯孝賢：「一個導演，沒有自覺，就不用玩', 'link': '/bbs/movie/M.1441633354.A.961.html'},
-{'author': 'Takuri', 'date': ' 9/07', 'push': '', 'title': '[請益] 倖存者（The Remaining)的結局', 'link': '/bbs/movie/M.1441636396.A.D64.html'},
+{'push': '4', 'link': '/bbs/movie/M.1441633354.A.961.html', 'title': '[新聞] 侯孝賢：「一個導演，沒有自覺，就不用玩', 'date': ' 9/07', 'author': 'soulx'},
+{'push': '', 'link': '/bbs/movie/M.1441636396.A.D64.html', 'title': '[請益] 倖存者（The Remaining)的結局', 'date': ' 9/07', 'author': 'Takuri'},
+{'push': '', 'link': None, 'title': '本文已被刪除', 'date': ' 9/07', 'author': '-'},
+{'push': '1', 'link': '/bbs/movie/M.1441637098.A.854.html', 'title': '[好雷] Hero電影版', 'date': ' 9/07', 'author': 'peichuan'},
+{'push': '', 'link': '/bbs/movie/M.1441637150.A.DA1.html', 'title': '[新聞] 「夢想海洋」主題曲 魏德聖王大陸力挺', 'date': ' 9/07', 'author': 'fireguard119'},
+{'push': '', 'link': '/bbs/movie/M.1441637513.A.14E.html', 'title': '[贈票] 未知之境 餘鬼狂歡～2015女性影展特映會', 'date': ' 9/07', 'author': 'epmt'},
+{'push': '', 'link': '/bbs/movie/M.1441637531.A.E5A.html', 'title': '[問片] 問幾部港片/國片', 'date': ' 9/07', 'author': 'ogcxd'},
 ...
 ]
 ```
@@ -195,7 +197,7 @@ from bs4 import BeautifulSoup
 
 from utils import pretty_print
 
-url = 'https://www.ptt.cc/bbs/movie/index.html'
+index_url = 'https://www.ptt.cc/bbs/movie/index.html'
 NOT_EXIST = BeautifulSoup('<a>本文已被刪除</a>', 'lxml').a
 
 control = None
@@ -232,8 +234,13 @@ def get_pages(num):
     return all_posts
 
 
-for post in get_pages(2):
-    pretty_print(post['push'], post['title'], post['date'], post['author'])
+
+if __name__ == '__main__':
+    pages = 5
+
+    for post in get_pages(pages):
+        pretty_print(post['push'], post['title'], post['date'], post['author'])
+
 ```
 
 **上面的程式碼都在 `src/` 中可以找到！**
