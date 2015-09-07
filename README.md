@@ -134,7 +134,7 @@ control = soup.find('div', 'pull-right').find_all('a', 'btn')
 
 而我們需要的是`上一頁`的功能，為什麼呢？因為 PTT 是最新的文章顯示在前面啊～所以要挖資料必須往前翻。
 
-那怎麼使用呢？先去抓出 `control` 中第二個 (index: [1]) 的 `href`，然後他可能長這樣 `/bbs/movie/index3237.html`；而完整的網址 (URL) 必須要有 `https://www.ptt.cc/` 開頭，所以用 `urljoin()` 把上一頁連結和新的 link 比對並合併成完整的 URL！
+那怎麼使用呢？先去抓出 `control` 中第二個(index: [1])的 `href`，然後他可能長這樣 `/bbs/movie/index3237.html`；而完整的網址(URL)必須要有 `https://www.ptt.cc/` 開頭，所以用 `urljoin()` 把 Movie 首頁連結和新的 link 比對合併成完整的 URL！
 
 ```python
 prev_link = control[1].get('href')
@@ -142,7 +142,7 @@ page_url = urllib.parse.urljoin(INDEX, prev_link)
 ```
 
 
-另外，或許會發現怎麼前面的程式有時候會出錯啊？！去看看網頁板發現，原來就是當該頁面中有文章被刪除的時候，因為網頁上的 `＜本文已被刪除＞` 這個元素的原始碼 `結構` 和原本不一樣哇！所以我們用 `BeautifulSoup` 生一個 `<a>` 元素來替代，方便後面存取時使用 (避免 title 和 link 的地方對 `None` 存取，產生上述提到的錯誤)。
+另外，或許會發現怎麼前面的程式有時候會出錯啊？！看看網頁版發現原來當該頁面中有文章被刪除時，網頁上的 `＜本文已被刪除＞` 這個元素的原始碼 `結構` 和原本不一樣哇！所以我們用 `BeautifulSoup` 生一個 `<a>` 元素來替代，方便後面存取時使用 (避免 title 和 link 的地方對 `None` 存取，產生上述提到的錯誤)。
 
 ```python
 
@@ -156,9 +156,9 @@ meta = article.find('div', 'title').find('a') or NOT_EXIST
 
 現在我們將函式重新定義，讓：
 - `get_posts_on_page(url)`:
-抓取一頁中所有的文章 metadata (很潮的`後設資料`)，並回傳一串 `key-value` 類型的資料。
+抓取一頁中所有的文章的 metadata (很潮的`後設資料`)，並回傳一串 `key-value` 類型的資料。
 - `get_pages(num)`:
-抓取最新的 num 個頁面，並指派 `get_posts_on_page` 去抓每頁面中的資料，把每一串資料合併成一大串後回傳。
+抓取最新的 N 個頁面，並指派 `get_posts_on_page` 去抓每頁面中的資料，把每一串資料合併成一大串後回傳。
 
 ```python
 # 每筆資料長這樣子，dict() 類型資料：key-value pairs data
@@ -186,7 +186,7 @@ meta = article.find('div', 'title').find('a') or NOT_EXIST
 
 附上**crawler_4.py 完整程式碼**
 
-另外要說明的是 `from utils import pretty_print`，把剛剛 **crawler_3.py** 那個漂亮的輸出功能數十行的程式碼放到同目錄底下的新檔案 `utils.py` 中 (檔案名字你喜歡就好，只要記得 `from xxx import pretty_print` 要記得一起改)，然後在這邊 `import` (相當於 C語言中的 include ) 就能繼續沿用功能！
+另外要說明的是 `from utils import pretty_print`，把剛剛 **crawler_3.py** 那個漂亮的輸出功能數十行的程式碼放到同目錄底下的新檔案 `utils.py` 中(檔案名字你喜歡就好，只要記得 `from xxx import pretty_print` 要記得一起改)，然後在這邊 `import`(相當於 C語言中的 include )就能繼續沿用功能！
 
 ```python
 import requests
