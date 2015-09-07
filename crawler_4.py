@@ -2,41 +2,46 @@ import requests
 import urllib.parse
 from bs4 import BeautifulSoup
 
-url = 'https://www.ptt.cc/bbs/movie/index.html'
+from utils import pretty_print
 
+INDEX = 'https://www.ptt.cc/bbs/movie/index.html'
 NOT_EXIST = BeautifulSoup('<a>本文已被刪除</a>', 'lxml').a
 
+control = None
 
-def get_posts(url):
-    posts = list()
 
+def get_posts_on_page(url):
     response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    articles = soup.find_all('div', 'r-ent')
+    soup = BeautifulSoup(response.text, 'lxml')
 
     global control
-    control = soup.find_all('div', 'pull-right')[0].find_all('a', 'btn')
+    control = soup.find('div', 'pull-right').find_all('a', 'btn')
+    articles = soup.find_all('div', 'r-ent')
 
+    posts = list()
     for article in articles:
-        title_meta = article.find('div', 'title').find('a') or NOT_EXIST
-        meta = article.find('div', 'meta')
-
-        post = dict()
-        post['link'] = title_meta.get('href', '')
-        post['title'] = title_meta.string.strip()
-        post['date'] = meta.find('div', 'date').string
-        post['author'] = meta.find('div', 'author').string
-        posts.append(post)
-
+        meta = article.find('div', 'title').find('a') or NOT_EXIST
+        posts.append({
+            'title': meta.getText().strip(),
+            'link': meta.get('href'),
+            'push': article.find('div', 'nrec').getText(),
+            'date': article.find('div', 'date').getText(),
+            'author': article.find('div', 'author').getText(),
+        })
     return posts
 
-control = None
-pages = 5
 
-page_url = url
+def get_pages(num):
+    page_url = INDEX
+    all_posts = list()
+    for i in range(num):
+        all_posts += get_posts_on_page(page_url)
+        prev_link = control[1]['href']
+        page_url = urllib.parse.urljoin(INDEX, prev_link)
+    return all_posts
 
-for i in range(pages):
-    posts = get_posts(page_url)
-    prev_link = control[1]['href']
-    page_url = urllib.parse.urljoin(url, prev_link)
-    print(posts)
+
+if __name__ == '__main__':
+    pages = 5
+    for post in get_pages(pages):
+        pretty_print(post['push'], post['title'], post['date'], post['author'])
