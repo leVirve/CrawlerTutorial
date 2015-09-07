@@ -6,7 +6,7 @@
 #相依套件
 首先使用 pip 來安裝等會要用的套件，
 - requests用來取代內建 urllib 模組，就是比原本的好用！
-- beautifulsoup 用來分析與抓取html中的元素
+- beautifulsoup 用來分析與抓取 html 中的元素
 - (選用) lxml用來解析 html/xml，一樣是比原生的有更多優點！
 
 ```
@@ -23,7 +23,7 @@ pip install lxml‑3.4.4‑cp34‑none‑win32.whl
 
 ![Unofficial Windows Binaries for lxml](http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml)
 
-#第一步：To see is to retrieve，所看即所抓
+#第一步：所看即所抓 To see is to retrieve
 
 使用 `requests.get()` 函式模擬 HTTP GET 方法來「瀏覽」網頁，並取得網址中的原始碼。
 回傳結果是一個 `Beautifulsoup` 包裝起來的物件，而我們真正目標是取得頁面原始碼：真正的純文字原始碼在 `response.text` 中。
@@ -36,7 +36,7 @@ response = requests.get(url)
 print(response.text)
 ```
 
-#第二步：Text interpretation，說說看你看到了什麼？
+#第二步：說說看你看到了什麼？Text Interpretation
 
 用 `Beautifulsoup` 來分析剛剛抓到的原始碼，在 `BeautifulSoup()` 的建構式第二個參數放入 `lxml` 讓他使用我們剛剛安裝的 lxml 來解析。
 (p.s. 若剛剛未選擇安裝 `lxml`，則用 Python 內建的 `html.parser` 解析即可。)
@@ -54,7 +54,7 @@ articles = soup.find_all('div', 'r-ent')
 print(articles)
 ```
 
-#第三步：所以那標題資訊到底怎麼用？
+#第三步：所以我說那個標題資訊呢？Hey, here's some meta data
 
 剛剛說過 `find_all()` 回傳符合的結果，而這串結果是個 `list` 型態的東西，所以我們用 `for loop` 來一個一個印出來看看。
 
@@ -79,13 +79,49 @@ for article in articles:
     date = article.find('div', 'date').getText()
     author = article.find('div', 'author').getText()
 
-    print(title, date, author, link)
+    print(push, title, date, author)
 ```
 
-### 執行結果 (此圖輸出經過特殊處理)
+#### 執行結果 (此圖輸出經過特殊處理)
 ![crawler_3_snap](https://raw.github.com/leVirve/CrawlerTutorial/master/crawler_3_snap.png)
 
-#第四步：現在 big data 時代捏，都嘛一次要大筆資料！
+*特殊處理：* 沒事多寫點程式碼啊！把天賦通通點在美化上吧～
+
+把這段程式碼貼到剛剛的 `crawler_3.py` 裡，並把 `print` 換成 `pretty_print`。漂亮的輸出就出現囉！
+
+``` python
+widths = [
+        (126,    1), (159,    0), (687,     1), (710,   0), (711,   1),
+        (727,    0), (733,    1), (879,     0), (1154,  1), (1161,  0),
+        (4347,   1), (4447,   2), (7467,    1), (7521,  0), (8369,  1),
+        (8426,   0), (9000,   1), (9002,    2), (11021, 1), (12350, 2),
+        (12351,  1), (12438,  2), (12442,   0), (19893, 2), (19967, 1),
+        (55203,  2), (63743,  1), (64106,   2), (65039, 1), (65059, 0),
+        (65131,  2), (65279,  1), (65376,   2), (65500, 1), (65510, 2),
+        (120831, 1), (262141, 2), (1114109, 1),
+]
+
+
+def calc_len(string):
+    def chr_width(o):
+        global widths
+        if o == 0xe or o == 0xf:
+            return 0
+        for num, wid in widths:
+            if o <= num:
+                return wid
+        return 1
+    return sum(chr_width(ord(c)) for c in string)
+
+
+def pretty_print(push, title, date, author):
+    pattern = '%3s\t%s%s%s\t%s'
+    padding = ' ' * (50 - calc_len(title))
+    print(pattern % (push, title, padding, date, author))
+
+```
+
+#第四步：現在 Big Data 時代捏，給我大數據！
 
 好，那就再開啟 `觀察法` 模式，去找找上一頁的連結在哪裡？
 找到了嗎？不是問你頁面上的按鈕在哪裡喔！是看原始碼啊，同學！
