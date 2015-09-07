@@ -31,8 +31,6 @@ print(response.text)
 
 #第二步：Text interpretation，說說看你看到了什麼？
 
-![](http://i.imgur.com/TwloRne.jpg)
-
 用 `beautifulsoup` 來解析剛剛抓到的原始碼。
 `BeautifulSoup()` 的第二個參數則放入 `lxml` 讓他使用我們剛剛安裝的 lxml 來解析。
 
@@ -69,16 +67,19 @@ soup = BeautifulSoup(response.text, 'lxml')
 articles = soup.find_all('div', 'r-ent')
 
 for article in articles:
-    title_meta = article.find('div', 'title').find('a')
-    meta = article.find('div', 'meta')
+    meta = article.find('div', 'title').find('a')
 
-    link = title_meta['href']
-    title = title_meta.text
-    date = meta.find('div', 'date').text
-    author = meta.find('div', 'author').text
+    title = meta.getText().strip()
+    link = meta.get('href')
+    push = article.find('div', 'nrec').getText()
+    date = article.find('div', 'date').getText()
+    author = article.find('div', 'author').getText()
 
     print(title, date, author, link)
 ```
+
+### 執行結果 (此圖輸出經過特殊處理)
+![crawler_3_snap](https://raw.github.com/leVirve/CrawlerTutorial/crawler_3_snap.png)
 
 #第四步：現在 big data 時代捏，都嘛一次要大筆資料！
 
