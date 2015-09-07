@@ -5,9 +5,9 @@
 
 #相依套件
 首先使用 pip 來安裝等會要用的套件，
-- requests用來取代內建 urllib 模組，就是比原本的好用！
+- requests 用來取代內建 urllib 模組，就是比原本的好用！
 - beautifulsoup 用來分析與抓取 html 中的元素
-- (選用) lxml用來解析 html/xml，一樣是比原生的有更多優點！
+- (選用) lxml 用來解析 html/xml，一樣是比原生的有更多優點！
 
 ```
 pip install requests
@@ -125,9 +125,26 @@ def pretty_print(push, title, date, author):
 
 好，那就再開啟 `觀察法` 模式，去找找上一頁的連結在哪裡？
 找到了嗎？不是問你頁面上的按鈕在哪裡喔！是看原始碼啊，同學！
+相信都有發現了，關於頁面跳轉的超連結就放在 `<div class='pull-right'>` 的 `<a class='btn'>` 裡，所以我們可以像這樣抓到他們：
 
-相信經過一番搜尋大家都能找的到，
-那個按鈕上面有著通往下一步地鑰匙，就是那個連結！抓住他！
+```python
+# 控制頁面選項: 最舊/上頁/下頁/最新
+control = soup.find('div', 'pull-right').find_all('a', 'btn')
+```
+
+而我們需要的是`上一頁`的功能，為什麼呢？因為 PTT 是最新的文章顯示在前面啊～所以要挖資料必須往前翻。
+
+另外，或許會發現怎麼前面的程式有時候會出錯啊？！去看看網頁板發現，原來就是當該頁面中有文章被刪除的時候，因為網頁上的 `＜本文已被刪除＞` 這個元素的原始碼 `結構` 和原本不一樣哇！所以我們用 `BeautifulSoup` 生一個 `<a>` 元素來替代，方便後面顯示存取時使用。
+
+```python
+
+NOT_EXIST = BeautifulSoup('<a>本文已被刪除</a>', 'lxml').a
+
+...
+
+# meta = A or B，當前面 A 的 .find() 抓到的是空的，則讓 meta 等於 B
+meta = article.find('div', 'title').find('a') or NOT_EXIST
+```
 
 ```python
 import requests
@@ -135,43 +152,45 @@ import urllib.parse
 from bs4 import BeautifulSoup
 
 url = 'https://www.ptt.cc/bbs/movie/index.html'
-
 NOT_EXIST = BeautifulSoup('<a>本文已被刪除</a>', 'lxml').a
 
+control = None
 
-def get_posts(url):
-    posts = list()
 
+def get_posts_on_page(url):
     response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    articles = soup.find_all('div', 'r-ent')
+    soup = BeautifulSoup(response.text, 'lxml')
 
     global control
-    control = soup.find_all('div', 'pull-right')[0].find_all('a', 'btn')
+    control = soup.find('div', 'pull-right').find_all('a', 'btn')
+    articles = soup.find_all('div', 'r-ent')
 
+    posts = list()
     for article in articles:
-        title_meta = article.find('div', 'title').find('a') or NOT_EXIST
-        meta = article.find('div', 'meta')
-
-        post = dict()
-        post['link'] = title_meta.get('href', '')
-        post['title'] = title_meta.string.strip()
-        post['date'] = meta.find('div', 'date').string
-        post['author'] = meta.find('div', 'author').string
-        posts.append(post)
-
+        meta = article.find('div', 'title').find('a') or NOT_EXIST
+        posts.append({
+            'title': meta.getText().strip(),
+            'link': meta.get('href'),
+            'push': article.find('div', 'nrec').getText(),
+            'date': article.find('div', 'date').getText(),
+            'author': article.find('div', 'author').getText(),
+        })
     return posts
 
-control = None
-pages = 5
 
-page_url = url
+def get_pages(num):
+    page_url = index_url
+    all_posts = list()
+    for i in range(num):
+        all_posts += get_posts_on_page(page_url)
+        prev_link = control[1]['href']
+        page_url = urllib.parse.urljoin(index_url, prev_link)
+    return all_posts
 
-for i in range(pages):
-    posts = get_posts(page_url)
-    prev_link = control[1]['href']
-    page_url = urllib.parse.urljoin(url, prev_link)
-    print(posts)
+
+from utils import pretty_print
+for post in get_pages(2):
+    pretty_print(post['push'], post['title'], post['date'], post['author'])
 ```
 
 以上就是基本的爬蟲教學課程。
