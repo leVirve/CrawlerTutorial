@@ -7,12 +7,12 @@ soup = BeautifulSoup(response.text, 'lxml')
 articles = soup.find_all('div', 'r-ent')
 
 for article in articles:
-    title_meta = article.find('div', 'title').find('a')
-    meta = article.find('div', 'meta')
+    meta = article.find('div', 'title').find('a')
 
-    link = title_meta['href']
-    title = title_meta.text
-    date = meta.find('div', 'date').text
-    author = meta.find('div', 'author').text
+    title = meta.getText().strip()
+    link = meta.get('href')
+    push = article.find('div', 'nrec').getText()
+    date = article.find('div', 'date').getText()
+    author = article.find('div', 'author').getText()
 
     print(title, date, author, link)
