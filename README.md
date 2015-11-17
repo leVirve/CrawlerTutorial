@@ -21,7 +21,7 @@ sudo apt-get install python3-lxml
 pip install lxml‑3.4.4‑cp34‑none‑win32.whl
 ```
 
-![Unofficial Windows Binaries for lxml](http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml)
+[Unofficial Windows Binaries for lxml](http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml)
 
 #第一步：所看即所抓 To see is to retrieve
 
