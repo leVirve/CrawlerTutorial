@@ -139,7 +139,7 @@ def pretty_print(push, title, date, author):
 
 ```
 
-# 第四步：現在 Big Data 時代欸，給我更資料！
+# 第四步：現在 Data 分析時代欸，給我資料！
 *Give me data!*
 
 好，那就再用 `觀察法` 模式，去找找上一頁的連結在哪裡？
