@@ -15,7 +15,7 @@ def get_posts_on_page(url):
     soup = BeautifulSoup(response.text, 'lxml')
 
     global control
-    control = soup.find('div', 'pull-right').find_all('a', 'btn')
+    control = soup.find('div', 'btn-group-paging').find_all('a', 'btn')
     articles = soup.find_all('div', 'r-ent')
 
     posts = list()
