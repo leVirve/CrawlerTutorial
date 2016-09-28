@@ -7,15 +7,11 @@ from utils import pretty_print
 INDEX = 'https://www.ptt.cc/bbs/movie/index.html'
 NOT_EXIST = BeautifulSoup('<a>本文已被刪除</a>', 'lxml').a
 
-control = None
-
 
 def get_posts_on_page(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'lxml')
 
-    global control
-    control = soup.find('div', 'btn-group-paging').find_all('a', 'btn')
     articles = soup.find_all('div', 'r-ent')
 
     posts = list()
@@ -28,16 +24,19 @@ def get_posts_on_page(url):
             'date': article.find('div', 'date').getText(),
             'author': article.find('div', 'author').getText(),
         })
-    return posts
+
+    next_link = soup.find('div', 'btn-group-paging').find_all('a', 'btn')[1].get('href')
+
+    return posts, next_link
 
 
 def get_pages(num):
     page_url = INDEX
     all_posts = list()
     for i in range(num):
-        all_posts += get_posts_on_page(page_url)
-        prev_link = control[1].get('href')
-        page_url = urllib.parse.urljoin(INDEX, prev_link)
+        posts, link = get_posts_on_page(page_url)
+        all_posts += posts
+        page_url = urllib.parse.urljoin(INDEX, link)
     return all_posts
 
 

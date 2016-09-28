@@ -144,11 +144,11 @@ def pretty_print(push, title, date, author):
 
 好，那就再用 `觀察法` 模式，去找找上一頁的連結在哪裡？
 找到了嗎？不是問你頁面上的按鈕在哪裡喔！是看原始碼啊，同學！
-相信都有發現了，關於頁面跳轉的超連結就放在 `<div class='pull-right'>` 的 `<a class='btn'>` 裡，所以我們可以像這樣抓到他們：
+相信都有發現了，關於頁面跳轉的超連結就放在 `<div class='btn-group-paging'>` 的 `<a class='btn'>` 裡，所以我們可以像這樣抓到他們：
 
 ```python
 # 控制頁面選項: 最舊/上頁/下頁/最新
-control = soup.find('div', 'pull-right').find_all('a', 'btn')
+controls = soup.find('div', 'btn-group-paging').find_all('a', 'btn')
 ```
 
 而我們需要的是`上一頁`的功能，為什麼呢？因為 PTT 是最新的文章顯示在前面啊～所以要挖資料必須往前翻。
@@ -156,8 +156,8 @@ control = soup.find('div', 'pull-right').find_all('a', 'btn')
 那怎麼使用呢？先去抓出 `control` 中第二個(index: [1])的 `href`，然後他可能長這樣 `/bbs/movie/index3237.html`；而完整的網址(URL)必須要有 `https://www.ptt.cc/` 開頭，所以用 `urljoin()` 把 Movie 首頁連結和新的 link 比對合併成完整的 URL！
 
 ```python
-prev_link = control[1].get('href')
-page_url = urllib.parse.urljoin(INDEX, prev_link)
+link = controls[1].get('href')
+page_url = urllib.parse.urljoin(INDEX, link)
 ```
 
 
@@ -175,7 +175,7 @@ meta = article.find('div', 'title').find('a') or NOT_EXIST
 
 現在我們將函式重新定義，讓：
 - `get_posts_on_page(url)`:
-抓取一頁中所有的文章的 metadata (很潮的`後設資料`)，並回傳一串 `key-value` 類型的資料。
+抓取一頁中所有的文章的 metadata (很潮的`後設資料`)，並回傳一串 `key-value` 類型的資料，以及前一頁的 link。
 - `get_pages(num)`:
 抓取最新的 N 個頁面，並指派 `get_posts_on_page` 去抓每頁面中的資料，把每一串資料合併成一大串後回傳。
 
@@ -216,22 +216,16 @@ from bs4 import BeautifulSoup
 
 from utils import pretty_print
 
-index_url = 'https://www.ptt.cc/bbs/movie/index.html'
+INDEX = 'https://www.ptt.cc/bbs/movie/index.html'
 NOT_EXIST = BeautifulSoup('<a>本文已被刪除</a>', 'lxml').a
-
-control = None
 
 
 def get_posts_on_page(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'lxml')
 
-    global control
-    control = soup.find('div', 'btn-group-paging').find_all('a', 'btn')
-    articles = soup.find_all('div', 'r-ent')
-
     posts = list()
-    for article in articles:
+    for article in soup.find_all('div', 'r-ent'):
         meta = article.find('div', 'title').find('a') or NOT_EXIST
         posts.append({
             'title': meta.getText().strip(),
@@ -240,16 +234,19 @@ def get_posts_on_page(url):
             'date': article.find('div', 'date').getText(),
             'author': article.find('div', 'author').getText(),
         })
-    return posts
+
+    next_link = soup.find('div', 'btn-group-paging').find_all('a', 'btn')[1].get('href')
+
+    return posts, next_link
 
 
 def get_pages(num):
-    page_url = index_url
+    page_url = INDEX
     all_posts = list()
     for i in range(num):
-        all_posts += get_posts_on_page(page_url)
-        prev_link = control[1].get('href')
-        page_url = urllib.parse.urljoin(index_url, prev_link)
+        posts, link = get_posts_on_page(page_url)
+        all_posts += posts
+        page_url = urllib.parse.urljoin(INDEX, link)
     return all_posts
 
 
