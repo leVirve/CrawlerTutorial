@@ -36,7 +36,7 @@ class PTTCrawler():
         soup = BeautifulSoup(response.text, 'lxml')
         articles = soup.find_all('div', 'r-ent')
 
-        self.ctrl = soup.find_all('div', 'pull-right')[0].find_all('a', 'btn')
+        self.ctrl = soup.find('div', 'btn-group-paging').find_all('a', 'btn')
 
         for article in articles:
             title_meta = article.find('div', 'title').find('a') \

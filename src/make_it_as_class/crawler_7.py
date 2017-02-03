@@ -21,6 +21,10 @@ class PTTCrawler():
                 self.count_pages()
             self.get_posts_list(self.next_url)
             self.next_url = self.get_next_url()
+
+        # get the posts content
+        self.get_articles()
+
         return self.posts
 
     def get_next_url(self):
@@ -36,7 +40,7 @@ class PTTCrawler():
         soup = BeautifulSoup(response.text, 'lxml')
         articles = soup.find_all('div', 'r-ent')
 
-        self.ctrl = soup.find_all('div', 'pull-right')[0].find_all('a', 'btn')
+        self.ctrl = soup.find('div', 'btn-group-paging').find_all('a', 'btn')
 
         for article in articles:
             title_meta = article.find('div', 'title').find('a') \
@@ -50,8 +54,22 @@ class PTTCrawler():
             post['author'] = meta.find('div', 'author').string
             self.posts.append(post)
 
+    def get_articles(self):
+        for post in self.posts:
+            url = urllib.parse.urljoin(PTTCrawler.url, post['link'])
+            response = requests.get(url)
+            post['content'] = response.text
+
+
 if __name__ == '__main__':
     ptt = PTTCrawler()
-    results = ptt.get_recent_page(3)
 
-    print(results)
+    import time
+    start = time.time()
+    posts = ptt.get_recent_page(5)
+    print('花費: %f 秒' % (time.time() - start))
+
+    print('共%d項結果：' % len(posts))
+    for post in posts:
+        print('{0} {1: <15} {2}'.format(
+            post['date'], post['author'], post['title']))
