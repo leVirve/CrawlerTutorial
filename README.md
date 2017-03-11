@@ -1,14 +1,14 @@
 # Tutorial of PTT crawler
 by slv ([Salas leVirve@Github](https://github.com/leVirve))
-*Update: 2016/09/28*
+*Update: 2017/03/11*
 
 ＜Intro to crawler＞：
 [Crawler / Spider](crawling.md) *Not complete yet...* :joy:
 
-＜Python 實際演練＞：
+# ＜Python 實際演練＞：
 在網路上養了一隻蟲，以下就用 PTT 的電影版文章作為我們的爬蟲目標囉！
 
-# 相依套件
+## 相依套件
 首先使用 `pip` 來安裝套件，
 - `requests` 發送接收 HTTP 請求及回應
     - 官方標語：`HTTP for Humans`，這才是真正給人用的介面啊，建議不要直接使用內建的 `urllib` 模組！
@@ -36,7 +36,7 @@ sudo apt-get install python3-lxml
 # if on windows, install from lxml wheel
 pip install lxml-3.6.4-cp35-cp35m-win_amd64.whl
 ```
-# 第一步：所看即所抓
+## 第一步：所看即所抓
 *What you see is what you retrieve, but all in text!*
 
 使用 `requests.get()` 函式仿造 HTTP GET 方法來「瀏覽」網頁，並取得網址中的內容。
@@ -51,7 +51,7 @@ response = requests.get(url)
 print(response.text)  # result of setp-1
 ```
 
-# 第二步：說說看你看到了什麼？
+## 第二步：說說看你看到了什麼？
 *Interpretate the retrieved text like a browser*
 
 一版情況下瀏覽器拿到了網頁原始碼之後，會先解析然後把畫面顯示成我們平常看見的樣子；但這邊我們並不做顯示只想分析原始碼內的資訊。所以用 `Beautifulsoup` 來分析剛剛抓到的文字，在 `BeautifulSoup()` 的建構式第二個參數放入 `'lxml'` 讓他使用我們剛剛安裝的 lxml 來解析。
@@ -71,7 +71,7 @@ articles = soup.find_all('div', 'r-ent')
 print(articles)  # result of setp-2
 ```
 
-# 第三步：所以我說那個標題資訊呢？
+## 第三步：所以我說那個標題資訊呢？
 *Hey, here's some meta data*
 
 剛剛說過 `find_all()` 回傳符合的結果，而這串結果是個 `list` 型態的東西，所以我們用 `for loop` 來一個一個印出來看看。
@@ -139,7 +139,7 @@ def pretty_print(push, title, date, author):
 
 ```
 
-# 第四步：現在 Data 分析時代欸，給我資料！
+## 第四步：現在 Data 分析時代欸，給我資料！
 *Give me data!*
 
 好，那就再用 `觀察法` 模式，去找找上一頁的連結在哪裡？
@@ -259,6 +259,115 @@ if __name__ == '__main__':
 
 ```
 
-**上面的程式碼都在 `src/` 中可以找到！**
 
-以上就是基本的爬蟲入門教學～
+## 第五步：加油好嗎，能不能爬快點！
+*Come on! Run! Run faster!*
+
+取得文章列表資訊（meta list）後，重要的是接下來取得文章內容（post content）
+在 metadata 中的 `link` 就是每篇文章的連結，所以用 `urllib.parse.urljoin` 串接出完整網址之後發出 request 取得該頁面的內容。但在這裡並沒有做進一步的文章內容解析（parse），並沒有解析文章標題、作者、內容、推文等等，請大家自行練習分析頁面取得資訊。
+
+```python
+def fetch_article_content(link):
+    url = urllib.parse.urljoin(INDEX, link)
+    response = requests.get(url)
+    return response.text
+```
+
+這一步使用 Python 的內建 library `multiprocessing` 來加速爬蟲的效率！
+
+使用 Python 內建寫好的 `ProcessPool` 來做 high-level 的 multiprocessing programming～
+
+```python
+from multiprocessing import Pool
+```
+然後在使用時使用 `with` statement 語法讓使用完之後將 process 資源自動釋放，`with Pool(processes=8) as pool`，而中間的 `processes=8` 則代表要開多少的 processes 來完成任務。而 ProcessPool 的用法也很簡單，`pool.map(function, items)`，有點像 functional programming 的概念，將 function 套用在每一個 item 上，最後得出跟 items 一樣數量的結果清單（list）。
+
+使用在前面介紹的抓取文章內容的任務上：
+
+```python
+def get_articles(metadata):
+    post_links = [meta['link'] for meta in metadata]
+    with Pool(processes=8) as pool:
+        contents = pool.map(fetch_article_content, post_links)
+        return contents
+```
+
+取得的 `contents` 會是 `list type` 的內容，所以最後可以疊袋拿出其中的資訊，以下附上完整的範例程式碼以及操作 `contents` 的方法。
+
+```python
+import time
+import urllib.parse
+from multiprocessing import Pool
+
+import requests
+from bs4 import BeautifulSoup
+
+
+INDEX = 'https://www.ptt.cc/bbs/movie/index.html'
+NOT_EXIST = BeautifulSoup('<a>本文已被刪除</a>', 'lxml').a
+
+
+def get_posts_list(url):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'lxml')
+
+    articles = soup.find_all('div', 'r-ent')
+
+    posts = list()
+    for article in articles:
+        meta = article.find('div', 'title').find('a') or NOT_EXIST
+        posts.append({
+            'title': meta.getText().strip(),
+            'link': meta.get('href'),
+            'push': article.find('div', 'nrec').getText(),
+            'date': article.find('div', 'date').getText(),
+            'author': article.find('div', 'author').getText(),
+        })
+
+    next_link = soup.find('div', 'btn-group-paging').find_all('a', 'btn')[1].get('href')
+
+    return posts, next_link
+
+
+def get_paged_meta(page):
+    page_url = INDEX
+    all_posts = list()
+    for i in range(page):
+        posts, link = get_posts_list(page_url)
+        all_posts += posts
+        page_url = urllib.parse.urljoin(INDEX, link)
+    return all_posts
+
+
+def get_articles(metadata):
+    post_links = [meta['link'] for meta in metadata]
+    with Pool(processes=8) as pool:
+        contents = pool.map(fetch_article_content, post_links)
+        return contents
+
+
+def fetch_article_content(link):
+    url = urllib.parse.urljoin(INDEX, link)
+    response = requests.get(url)
+    return response.text
+
+
+if __name__ == '__main__':
+    pages = 5
+
+    start = time.time()
+
+    metadata = get_paged_meta(pages)
+    articles = get_articles(metadata)
+
+    print('花費: %f 秒' % (time.time() - start))
+
+    print('共%d項結果：' % len(articles))
+    for post, content in zip(metadata, articles):
+        print('{0} {1: <15} {2}, 網頁內容共 {3} 字'.format(
+            post['date'], post['author'], post['title'], len(content)))
+```
+
+這份程式 `crawler_multiprocess.py` 中用到 `time.time()` 計時，可以試看看用多少 `process` 和不用 `multiprocessing` 的時間差距～
+
+**上面的程式碼都在 `src/` 中可以找到！**
