@@ -1,11 +1,11 @@
-# Tutorial of PTT crawler
+# Tutorial of crawler
 by slv ([Salas leVirve@Github](https://github.com/leVirve))
-*Update: 2017/03/11*
+*Update: 2017/06/09*
 
 ＜Intro to crawler＞：
 [Crawler / Spider](crawling.md) *Not complete yet...* :joy:
 
-# ＜Python 實際演練＞：
+# (基礎篇) PTT 爬蟲實際演練：
 在網路上養了一隻蟲，以下就用 PTT 的電影版文章作為我們的爬蟲目標囉！
 
 ## 相依套件
@@ -15,27 +15,28 @@ by slv ([Salas leVirve@Github](https://github.com/leVirve))
 - `beautifulsoup` 用來分析與抓取 html 中的元素
     - 簡單好用，沒有嚴格要求解析速度的話是個很好的選擇。
 
-```bash
-pip install requests
-pip install beautifulsoup4
-```
+    ```bash
+    pip install requests
+    pip install beautifulsoup4
+    ```
 - (選用) `lxml` 用來解析 html/xml
     - 簡單好用(?)，解析速度快多了！不過想要直接透過 lxml 解需要先熟悉 `xpath` 語法，其實也挺容易學的～
-    - 可在這邊找到好心人預編譯好的 wheel for Windows ([Unofficial pre-compiled lxml](http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml))
+    - 可在這邊找到好心人預編譯好的 wheel for Windows ([Unofficial pre-compiled lxml](http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml)) (最近 `PyPi` 上作者也提供編譯好的版本了)
 
-```bash
-# install through pip but need compile
-pip install lxml
+    ```bash
+    # install through pip
+    pip install lxml
 
-# if you have conda, congrats!
-conda install lxml
+    # if you have conda, congrats!
+    conda install lxml
 
-# if on debain/ubuntu, you may install binary directly...
-sudo apt-get install python3-lxml
+    # if on debain/ubuntu, you may install binary directly...
+    sudo apt-get install python3-lxml
 
-# if on windows, install from lxml wheel
-pip install lxml-3.6.4-cp35-cp35m-win_amd64.whl
-```
+    # if on windows, you may install from lxml wheel
+    pip install lxml-3.8.0-cp35-cp35m-win_amd64.whl
+    ```
+
 ## 第一步：所看即所抓
 *What you see is what you retrieve, but all in text!*
 
