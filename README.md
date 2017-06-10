@@ -21,7 +21,8 @@ by slv ([Salas leVirve@Github](https://github.com/leVirve))
     ```
 - (選用) `lxml` 用來解析 html/xml
     - 簡單好用(?)，解析速度快多了！不過想要直接透過 lxml 解需要先熟悉 `xpath` 語法，其實也挺容易學的～
-    - 可在這邊找到好心人預編譯好的 wheel for Windows ([Unofficial pre-compiled lxml](http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml)) (最近 `PyPi` 上作者也提供編譯好的版本了)
+    - 可在這邊找到好心人為 Windows 預編譯好的 wheel ([Unofficial pre-compiled lxml](http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml))
+    - p.s. 最近作者也提供編譯好的 `Windows` 版本在 `PyPi` 上了，各系統應該都能用 `pip` 安裝了～
 
     ```bash
     # install through pip
@@ -55,7 +56,7 @@ print(response.text)  # result of setp-1
 ## 第二步：說說看你看到了什麼？
 *Interpretate the retrieved text like a browser*
 
-一版情況下瀏覽器拿到了網頁原始碼之後，會先解析然後把畫面顯示成我們平常看見的樣子；但這邊我們並不做顯示只想分析原始碼內的資訊。所以用 `Beautifulsoup` 來分析剛剛抓到的文字，在 `BeautifulSoup()` 的建構式第二個參數放入 `'lxml'` 讓他使用我們剛剛安裝的 lxml 來解析。
+一般情況下瀏覽器拿到了網頁原始碼之後，會先解析然後把畫面顯示成我們平常看見的樣子；但這邊我們並不做顯示只想分析原始碼內的資訊。所以用 `Beautifulsoup` 來分析剛剛抓到的文字，在 `BeautifulSoup()` 的建構式第二個參數放入 `'lxml'` 讓他使用我們剛剛安裝的 lxml 來解析。
 (p.s. 若剛剛未選擇安裝 `lxml`，則用 Python 內建的 `html.parser` 解析即可。)
 
 而藉由我們打開瀏覽器查看網頁原始碼 (可用`F12` 開發者工具) 得知 PTT 網頁版中，每一篇文章的標題訊息皆放在 `class="r-ent"` 的 `div` 標籤裡。這裡我們使用到 `find_all()` 方法來操作 `BeautifulSoup` 物件並指定尋找目標，找到之後的結果是一串文章列表資訊。
@@ -102,9 +103,10 @@ for article in articles:
 ```
 
 #### 執行結果 (此圖輸出經過特殊處理)
-![crawler_3_snap](https://raw.github.com/leVirve/CrawlerTutorial/master/crawler_3_snap.png)
+![crawler_3_snap](img/crawler_3_snap.png)
 
 *特殊處理：* 沒事多寫點程式碼啊！把天賦通通點在美化上吧～
+(字元寬度處理參考自 [urwid](https://github.com/urwid/urwid/blob/master/urwid/old_str_util.py))
 
 把這段程式碼貼到剛剛的 `crawler_3.py` 裡，並把 `print` 換成 `pretty_print`。漂亮的輸出就出現囉！
 
