@@ -5,6 +5,13 @@ by slv ([Salas leVirve@Github](https://github.com/leVirve))
 ＜Intro to crawler＞：
 [Crawler / Spider](crawling.md) *Not complete yet...* :joy:
 
+Related works of mine：
+- [dcard-spider](https://github.com/leVirve/dcard-spider): 透過 Dcard API 抓取/下載資料的高效能爬蟲。
+- [ptt-spider](https://github.com/leVirve-arxiv/ptt-spider): PTT 高效能爬蟲，使用 lxml 快速解析並利用 asynio/coroutines 提高效率。
+- [ptt-scrapy](https://github.com/leVirve-arxiv/ptt-scrapy): 使用 `scrapy` 穩定爬取 PTT 資料。
+- [ptt-viewer](https://github.com/leVirve-arxiv/ptt-viewer): 將取得的資訊透過 Web UI 介面視覺化顯示。
+
+
 # (基礎篇) PTT 爬蟲實際演練：
 在網路上養了一隻蟲，以下就用 PTT 的電影版文章作為我們的爬蟲目標囉！
 
