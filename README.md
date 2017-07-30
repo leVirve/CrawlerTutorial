@@ -1,22 +1,19 @@
-# Tutorial of crawler
+# 爬蟲教學
 by slv ([Salas leVirve@Github](https://github.com/leVirve))
-*Update: 2017/06/09*
+*Update: 2017/07/30*
 
-＜Intro to crawler＞：
+Intro to crawler：
 [Crawler / Spider](crawling.md) *Not complete yet...* :joy:
 
-Related works of mine：
+相關專案：
 - [dcard-spider](https://github.com/leVirve/dcard-spider): 透過 Dcard API 抓取/下載資料的高效能爬蟲。
 - [ptt-spider](https://github.com/leVirve-arxiv/ptt-spider): PTT 高效能爬蟲，使用 lxml 快速解析並利用 asynio/coroutines 提高效率。
 - [ptt-scrapy](https://github.com/leVirve-arxiv/ptt-scrapy): 使用 `scrapy` 穩定爬取 PTT 資料。
 - [ptt-viewer](https://github.com/leVirve-arxiv/ptt-viewer): 將取得的資訊透過 Web UI 介面視覺化顯示。
 
+# 需要的套件
+使用 `pip` 來安裝套件，
 
-# (基礎篇) PTT 爬蟲實際演練：
-在網路上養了一隻蟲，以下就用 PTT 的電影版文章作為我們的爬蟲目標囉！
-
-## 相依套件
-首先使用 `pip` 來安裝套件，
 - `requests` 發送接收 HTTP 請求及回應
     - 官方標語：`HTTP for Humans`，這才是真正給人用的介面啊，建議不要直接使用內建的 `urllib` 模組！
 - `beautifulsoup` 用來分析與抓取 html 中的元素
@@ -45,11 +42,17 @@ Related works of mine：
     pip install lxml-3.8.0-cp35-cp35m-win_amd64.whl
     ```
 
+
+# [基礎篇] PTT 爬蟲實際演練：
+用 PTT 的電影版文章作為我們的爬蟲目標囉！
+
 ## 第一步：所看即所抓
 *What you see is what you retrieve, but all in text!*
 
-使用 `requests.get()` 函式仿造 HTTP GET 方法來「瀏覽」網頁，並取得網址中的內容。
-回傳結果是一個 `requests.Response` 包裝起來的物件，而我們現在的目標是取得頁面原始碼即可；而網頁原始碼就在 `response.text` 中。
+![](img/ptt_page_view.png)
+
+使用 `requests.get()` 函式仿造瀏覽器發出 `HTTP` `GET` 方法來「瀏覽」網頁，並取得網址所在頁面的內容；與平時使用瀏覽器看網頁的差異在於沒有渲染出得到的「文字」資訊。
+這個方法的回傳結果是一個 `requests.Response` 包裝起來的物件，而我們現在的目標是取得頁面原始碼即可；而網頁原始碼就在 `response.text` 中。
 
 ```python
 import requests
@@ -63,10 +66,12 @@ print(response.text)  # result of setp-1
 ## 第二步：說說看你看到了什麼？
 *Interpretate the retrieved text like a browser*
 
+![](img/ptt_console_view.png)
+
 一般情況下瀏覽器拿到了網頁原始碼之後，會先解析然後把畫面顯示成我們平常看見的樣子；但這邊我們並不做顯示只想分析原始碼內的資訊。所以用 `Beautifulsoup` 來分析剛剛抓到的文字，在 `BeautifulSoup()` 的建構式第二個參數放入 `'lxml'` 讓他使用我們剛剛安裝的 lxml 來解析。
 (p.s. 若剛剛未選擇安裝 `lxml`，則用 Python 內建的 `html.parser` 解析即可。)
 
-而藉由我們打開瀏覽器查看網頁原始碼 (可用`F12` 開發者工具) 得知 PTT 網頁版中，每一篇文章的標題訊息皆放在 `class="r-ent"` 的 `div` 標籤裡。這裡我們使用到 `find_all()` 方法來操作 `BeautifulSoup` 物件並指定尋找目標，找到之後的結果是一串文章列表資訊。
+而藉由我們打開瀏覽器查看網頁原始碼 (可用`F12` 開發人員工具) 得知 PTT 網頁版中，每一篇文章的標題訊息皆放在 `class="r-ent"` 的 `div` 標籤裡。這裡我們使用到 `find_all()` 方法來操作 `BeautifulSoup` 物件並指定尋找目標，找到之後的結果是一串文章列表資訊。
 
 ```python
 import requests
@@ -83,10 +88,14 @@ print(articles)  # result of setp-2
 ## 第三步：所以我說那個標題資訊呢？
 *Hey, here's some meta data*
 
+
 剛剛說過 `find_all()` 回傳符合的結果，而這串結果是個 `list` 型態的東西，所以我們用 `for loop` 來一個一個印出來看看。
 
-而因為 html 本來就是具有階層式的標記語言，所有的資料都是用 `觀察法` 判斷到底放在哪個標籤哪一階層裡，以下就不多加贅述！
-示範內容抓出：推文數、標題名稱、作者、發文日期和文章網址。
+而因為 HTML 本來就是具有階層式的標記語言，可以透過觀察剛剛 `開發人員工具` 的 `Elements` 頁籤來判斷到底放在哪個標籤哪一階層裡，例如：標題就在 `<div class='r-ent'>` 這個標籤下的 `<div class='title'>` 的文字裡。
+
+![](img/ptt_source_tree.png)
+
+示範內容抓出：推文數、標題名稱、作者、發文日期和文章網址等文本內容；而提取（extraction）的相關語法可以參見 `BeautifulSoup4` 官方文件都有清楚的介紹。
 
 ```python
 import requests
@@ -109,7 +118,7 @@ for article in articles:
     print(push, title, date, author)  # result of setp-3
 ```
 
-#### 執行結果 (此圖輸出經過特殊處理)
+#### 執行結果 (輸出經過特殊處理)
 ![crawler_3_snap](img/crawler_3_snap.png)
 
 *特殊處理：* 沒事多寫點程式碼啊！把天賦通通點在美化上吧～
@@ -152,8 +161,12 @@ def pretty_print(push, title, date, author):
 ## 第四步：現在 Data 分析時代欸，給我資料！
 *Give me data!*
 
+
 好，那就再用 `觀察法` 模式，去找找上一頁的連結在哪裡？
-找到了嗎？不是問你頁面上的按鈕在哪裡喔！是看原始碼啊，同學！
+找到了嗎？不是問你頁面上的按鈕在哪裡喔！是看 source tree 啊！
+
+![](img/ptt_source_tree_page_control.png)
+
 相信都有發現了，關於頁面跳轉的超連結就放在 `<div class='btn-group-paging'>` 的 `<a class='btn'>` 裡，所以我們可以像這樣抓到他們：
 
 ```python
@@ -285,7 +298,7 @@ def fetch_article_content(link):
 
 這一步使用 Python 的內建 library `multiprocessing` 來加速爬蟲的效率！
 
-使用 Python 內建寫好的 `ProcessPool` 來做 high-level 的 multiprocessing programming～
+使用 Python 內建寫好的 `ProcessPool` 來做 high-level 的 multiprocessing programming～這是 Python 中使用 multi-process 最簡單最方便的方法！非常適合這種 SIMD (Single Instruction Multiple Data) 的場景。
 
 ```python
 from multiprocessing import Pool
@@ -380,4 +393,16 @@ if __name__ == '__main__':
 
 這份程式 `crawler_multiprocess.py` 中用到 `time.time()` 計時，可以試看看用多少 `process` 和不用 `multiprocessing` 的時間差距～
 
-**上面的程式碼都在 `src/` 中可以找到！**
+附上實驗實測結果：
+
+```bash
+$ python crawler_multiprocess.py  # with 1-process
+花費: 18.773823 秒
+
+$ python crawler_multiprocess.py  # with 8-process
+花費: 4.885024 秒
+```
+
+可以看出整體執行速度加速了將近四倍，但是並不一定 `Process` 越多越好，除了必須看 CPU 等硬體規格，主要還是取決於網卡、網速等外部裝置的限制。
+
+**上面的程式碼都可以在 `src/` 中可以找到！**
