@@ -1,5 +1,7 @@
 # 爬蟲教學 CrawlerTutorial
-*18 Jul 2015. Update: 2018/05/15.*
+*18 Jul 2015. Update: 2018/05/16.*
+
+隨著 PTT Web 改版加入了許多原本 BBS 才有的功能，本教學也同步更新～教學如何讓爬蟲學會新把戲！
 
 *   [概述](#overview)
     *   [什麼是爬蟲](crawling.md) *Not complete yet...* :joy:
@@ -7,7 +9,8 @@
 *   [實例教學 - PTT](#tutorial)
     *   [基本環境](#env)
     *   [[基礎篇] - PTT 爬蟲實際演練](#basic)
-    *   [進階篇](#)
+    *   [[進階篇] - PTT 搜尋功能](#advanced)
+    *   [[API篇] - 我把 PTT 全包了](#package)
 
 
 <a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="創用 CC 授權條款" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" /></a><br />本著作由<a xmlns:cc="http://creativecommons.org/ns#" href="https://github.com/leVirve" property="cc:attributionName" rel="cc:attributionURL">leVirve</a>製作，以<a rel="license" href="http://creativecommons.org/licenses/by/4.0/">創用CC 姓名標示 4.0 國際 授權條款</a>釋出。
@@ -57,11 +60,14 @@
 使用 `requests.get()` 函式仿造瀏覽器發出 `HTTP` `GET` 方法來「瀏覽」網頁，並取得網址所在頁面的內容；與平時使用瀏覽器看網頁的差異在於沒有渲染出得到的「文字」資訊。
 這個方法的回傳結果是一個 `requests.Response` 包裝起來的物件，而我們現在的目標是取得頁面原始碼即可；而網頁原始碼就在 `resp.text` 中。
 
+但目前的做法直接套用到 Gossiping 板時會發生錯誤，原因是因為在"第一次"瀏覽八卦版時會先有一個確認年齡是否滿十八歲的頁面，而當點擊過後瀏覽器會記錄下 `cookies` 所以下次再次進入時就不會在被詢問(可以使用無痕打開測試看看八卦版首頁)。所以對爬蟲而言，只要把該筆特殊的 `cookies` 記錄下來，那麼在瀏覽時就能假裝已經通過滿十八歲測試。
+
 ```python
 import requests
 
 def fetch(url):
     response = requests.get(url)
+    response = requests.get(url, cookies={'over18': '1'})  # 一直向 server 回答滿 18 歲了 !
     return response
 
 url = 'https://www.ptt.cc/bbs/movie/index.html'
@@ -397,3 +403,81 @@ $ python crawler_multiprocess.py  # with 8-process
 可以看出整體執行速度加速了將近四倍，但是並不一定 `Process` 越多越好，除了必須看 CPU 等硬體規格，主要還是取決於網卡、網速等外部裝置的限制。
 
 **上面的程式碼都可以在 (`src/basic_crawler.py`) 中可以找到！**
+
+
+<h3 id="advanced">[進階篇] PTT 搜尋功能：</h3>
+
+**PTT Web 新功能：搜尋！** 終於可以在網頁版使用了
+
+一樣使用 PTT 的電影版作為我們的爬蟲目標囉！在新版功能中可以搜尋的內容包含，
+
+* 標題關鍵字 (title keywords)
+* 相同標題文章 (thread title)
+* 同作者文章 (author)
+* 推文數多的文章 (recommend)
+
+![](img/ptt_post_related.png)
+
+前三者都可以從新版的頁面原始碼及送出請求發現規則，不過推文數搜尋似乎還沒有在網頁版 UI 介面中出現；所以這邊是筆者從 `PTT 網站原始碼` 中挖掘出來的參數。平常我們瀏覽的 PTT 其實包含 BBS server (就是 BBS)，以及前台的 Web server (網頁版)，而前台的 Web server 是用 Go 語言 (Golang) 寫的，可以直接存取後端 BBS 資料，並且以一般網站互動模式將內容渲染成網頁形式供瀏覽。
+
+
+那其實要使用這些新功能非常簡單，只需要透過 `HTTP` `GET` 形式的 request 並且加上標準的 query string 方式就能獲得這些資訊。提供搜尋功能的 `endpoint` URL 為 `/bbs/{看板名稱}/search`，只要用對應的 query 即可從這邊獲得搜尋結果。首先以標題關鍵字為例，
+
+![](img/ptt_search_kw.png)
+
+從圖片中右下角可以看出，在搜尋時其實是對 `endpoint` 送出 `q=三` 的 `GET` 請求，所以整個完整的 URL 應該像是 `https://www.ptt.cc/bbs/movie/search?q=三`，不過從網址列複製下來的網址可能會是 `https://www.ptt.cc/bbs/movie/search?q=%E4%B8%89` 這樣的形式，是因為中文被 HTML encode 過了但代表的是相同意思。而在 `requests` 中，想要增加額外的 query 參數不用自己手動建構字串形式，只要透過 `param=` 的 dict() 放到函式參數即可，就像是這樣：
+
+```python
+search_endpoint_url = 'https://www.ptt.cc/bbs/movie/search'
+
+resp = requests.get(search_endpoint_url, params={'q': '三'})
+```
+
+![](img/ptt_search_title.png)
+
+在搜尋相同文章 (thread) 時，可以由右下角資訊看出，其實就是將 `thread:` 這個字串串到標題前面後送出查詢。
+
+```python
+resp = requests.get(search_endpoint_url, params={'q': 'thread:[ 好雷]  死侍2的各種彩蛋討論'})
+```
+
+![](img/ptt_search_author.png)
+
+在搜尋相同作者文章 (author) 時，同樣由右下角資訊看出是將 `author:` 這個字串串上作者名字後送出查詢。
+
+```python
+resp = requests.get(search_endpoint_url, params={'q': 'author:rogerwang86'})
+```
+
+![](img/ptt_search_recommend.png)
+
+在搜尋推文數大於多少 (recommend) 的文章時，就是將 `recommend:` 這個字串串上希望搜尋到的最低推文數後送出查詢。另外可以從 PTT Web server 原始碼中發現推文數只能設定在 ±100 間。
+
+```python
+resp = requests.get(search_endpoint_url, params={'q': 'recommend:50'})
+```
+
+* PTT Web parsing 這些參數的 function 原始碼
+
+    ![](img/ptt_source_parse_query.png)
+
+
+另外值得一提的是，搜尋結果最後的呈現也跟基礎篇裡提到的一般版面相同，所以可以直接將前面的 function 再拿來重複利用，`Don't do it again!`
+
+```python
+resp = requests.get(search_endpoint_url, params={'q': 'recommend:50'})
+
+post_entries = parse_article_entries(resp.text)  # [沿用]
+metadata = [parse_article_meta(entry) for entry in post_entries]  # [沿用]
+```
+
+在搜尋中有另一個參數，頁數 `page` 就跟 Google 搜尋一樣，搜尋到的東西也許有很多頁，那麼就可以透過這個額外的參數來控制要取得第幾頁結果，而不需要再去 parse 頁面上的 link。
+
+```python
+resp = requests.get(search_endpoint_url, params={'q': 'recommend:50', 'page': 2})
+```
+
+
+<h3 id="package">[API篇] - 我把 PTT 全包了</h3>
+
+將前面所有的功能通通整合進 [ptt-parser](ptt-parser)，可以提供 command-line 功能以及可程式化呼叫的 API 形式的 `爬蟲`。
