@@ -1,3 +1,4 @@
+import os
 import re
 
 from lxml import etree
@@ -11,7 +12,7 @@ def current_page_number(r: HTMLResponse):
     xpath = '//*[@id="action-bar-container"]/div/div[2]/a[2]'
     prev_url = xpath_attr(r.html, xpath, attr='href')
 
-    match = re.search('index(\d+)', prev_url)
+    match = re.search(r'index(\d+)', prev_url)
     current_page_number = int(match.group(1)) + 1 if match else 0
 
     return current_page_number
@@ -36,6 +37,8 @@ def post_metas(r: HTMLResponse):
                 e[field] = selected_text(ent, selector)
                 if field == 'link':
                     e[field] = selected_attr(ent, selector, 'href')
+                    e['filename'], _ = os.path.splitext(
+                        os.path.basename(e['link']))
             except Exception:
                 continue
         return e
@@ -56,11 +59,12 @@ def post_content(r: HTMLResponse):
     def parse_postline():
         ip_text = main.find(
             'span', containing='發信站: 批踢踢實業坊(ptt.cc)', first=True).text
+        # sometimes fails due to span+a (default: span>a)
         url = main.find(
-            'span', containing='※ 文章網址:', first=True).find(
+            'span', containing='文章網址:', first=True).find(
                 'a', first=True).attrs.get('href')
 
-        match = re.search('\d+.\d+.\d+.\d+', ip_text)
+        match = re.search(r'\d+\.\d+\.\d+\.\d+', ip_text)
         ip = match[0] if match else ''
 
         return ip, url
@@ -108,7 +112,11 @@ def post_content(r: HTMLResponse):
             comments=parse_comments(),
             content=parse_content())
     except IndexError:
-        return {}
+        raise PttParseContentError
+
+
+class PttParseContentError(Exception):
+    pass
 
 
 ''' General Utils '''

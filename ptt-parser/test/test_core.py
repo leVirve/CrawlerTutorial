@@ -1,4 +1,5 @@
 import ptt
+from ptt.parser import PttParseContentError
 
 
 def test_get_meta_over18():
@@ -13,13 +14,10 @@ def test_get_meta():
     assert len(meta) == 20
 
     board = ptt.Board('movie')
-    meta = board.get_meta(num=5)
-    assert len(meta) == 5
+    meta = board.get_meta(num=10)
+    assert len(meta) == 10
 
-    meta = board.get_meta(num=5, start_aid='')
-    assert len(meta) == 5
-
-    meta = board.get_meta(num=5, start_date='')
+    meta = board.get_meta(num=5, after_filename=meta[-1].filename)
     assert len(meta) == 5
 
 
@@ -37,10 +35,14 @@ def test_get_post_from_meta():
     meta = board.get_meta(num=5)
 
     for m in meta:
-        if '公告' in m.title:
+        try:
+            post = board.get_post(link=m.link)
+            break
+        except PttParseContentError:
             continue
-        post = board.get_post(link=m.link)
-        assert post
+
+    assert post
+    assert post.ip
 
 
 def test_get_post_from_url():

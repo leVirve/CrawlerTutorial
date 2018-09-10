@@ -36,18 +36,48 @@ class Board():
         self.name = name
         self._current_page = None
 
-    def get_meta(self, num: int, start_aid=None, start_date=None):
+    def get_meta(self, num: int, after_filename: str = ''):
+        self._current_page = None
+        if after_filename:
+            return self._get_after_filename_meta(num, after_filename)
+        else:
+            return self._get_newest_meta(num)
+
+    def _get_newest_meta(self, num: int):
         metas = []
         meta_gen = self.get_pagination_meta(pages=None)
 
         while True:
-            metas += next(meta_gen)
+            batch_meta = list(next(meta_gen))
+            metas += batch_meta
+
             if len(metas) > num:
                 metas = metas[:num]
                 break
 
             print(f'Current page: {self._current_page}, '
                   f'number of metas: {len(metas)}')
+
+        return metas
+
+    def _get_after_filename_meta(self, num: int, after_filename: str = ''):
+        metas, found = [], False
+        meta_gen = self.get_pagination_meta(pages=None)
+
+        while not found:
+            batch_meta = list(next(meta_gen))
+
+            for i, meta in enumerate(batch_meta):
+                if meta.filename == after_filename:
+                    found = True
+                    break
+            metas += batch_meta[:i]
+
+            print(f'Current page: {self._current_page}, '
+                  f'number of metas: {len(metas)}')
+
+        if len(metas) > num:
+            metas = metas[-num:]
 
         return metas
 
@@ -94,7 +124,6 @@ class Board():
             yield meta
 
             params['page'] = i + 1
-
 
     def get_post(self, link):
         url = link if domain in link else f'{domain}{link}'

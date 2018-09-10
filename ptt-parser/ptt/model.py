@@ -34,6 +34,7 @@ class PostMeta():
         self.date = kwargs.get('date')
         self.author = kwargs.get('author')
         self.link = kwargs.get('link')
+        self.filename = kwargs.get('filename')
 
     def __str__(self):
         return '<PostMeta> %s' % (self.title)
