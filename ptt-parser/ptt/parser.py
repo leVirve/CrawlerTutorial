@@ -39,8 +39,8 @@ def post_metas(r: HTMLResponse):
                     e[field] = selected_attr(ent, selector, 'href')
                     e['filename'], _ = os.path.splitext(
                         os.path.basename(e['link']))
-            except Exception:
-                continue
+            except Exception as err:
+                print(err)
         return e
 
     return [PostMeta(**parse_entry(ent)) for ent in entries]

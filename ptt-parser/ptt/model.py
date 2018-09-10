@@ -27,14 +27,12 @@ class Post():
 
 class PostMeta():
 
+    fields = ['push', 'mark', 'title', 'date', 'author', 'link', 'filename']
+
     def __init__(self, **kwargs):
-        self.push = kwargs.get('push')
-        self.mark = kwargs.get('mark')
-        self.title = kwargs.get('title')
-        self.date = kwargs.get('date')
-        self.author = kwargs.get('author')
-        self.link = kwargs.get('link')
-        self.filename = kwargs.get('filename')
+        for k, v in kwargs.items():
+            if k in self.fields:
+                setattr(self, k, v)
 
     def __str__(self):
         return '<PostMeta> %s' % (self.title)

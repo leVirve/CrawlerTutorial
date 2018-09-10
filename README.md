@@ -1,29 +1,28 @@
 # 爬蟲教學 CrawlerTutorial
+
 *18 Jul 2015. Update: 2018/05/16.*
 
 隨著 PTT Web 改版加入了許多原本 BBS 才有的功能，本教學也同步更新～教學如何讓爬蟲學會新把戲！
 
-*   [概述](#overview)
-    *   [什麼是爬蟲](crawling.md) *Not complete yet...* :joy:
-    *   [相關專案](#projects)
-*   [實例教學 - PTT](#tutorial)
-    *   [基本環境](#env)
-    *   [[基礎篇] - PTT 爬蟲實際演練](#basic)
-    *   [[進階篇] - PTT 搜尋功能](#advanced)
-    *   [[API篇] - 我把 PTT 全包了](#package)
-
+* [概述](#overview)
+  * [什麼是爬蟲](crawling.md) *Not complete yet...* :joy:
+  * [相關專案](#projects)
+* [實例教學 - PTT](#tutorial)
+  * [基本環境](#env)
+  * [[基礎篇] - PTT 爬蟲實際演練](#basic)
+  * [[進階篇] - PTT 搜尋功能](#advanced)
+  * [[API篇] - 我把 PTT 全包了](#package)
 
 <a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="創用 CC 授權條款" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" /></a><br />本著作由<a xmlns:cc="http://creativecommons.org/ns#" href="https://github.com/leVirve" property="cc:attributionName" rel="cc:attributionURL">leVirve</a>製作，以<a rel="license" href="http://creativecommons.org/licenses/by/4.0/">創用CC 姓名標示 4.0 國際 授權條款</a>釋出。
-
 
 <h2 id="overview">概述</h2>
 
 <h3 id="projects">相關專案：</h3>
 
-- [dcard-spider](https://github.com/leVirve/dcard-spider): 透過 Dcard API 抓取/下載資料的高效能爬蟲。
-- [ptt-spider](https://github.com/leVirve-arxiv/ptt-spider): PTT 高效能爬蟲，使用 lxml 快速解析並利用 asynio/coroutines 提高效率。
-- [ptt-scrapy](https://github.com/leVirve-arxiv/ptt-scrapy): 使用 `scrapy` 穩定爬取 PTT 資料。
-- [ptt-viewer](https://github.com/leVirve-arxiv/ptt-viewer): 將取得的資訊透過 Web UI 介面視覺化顯示。
+* [dcard-spider](https://github.com/leVirve/dcard-spider): 透過 Dcard API 抓取/下載資料的高效能爬蟲。
+* [ptt-spider](https://github.com/leVirve-arxiv/ptt-spider): PTT 高效能爬蟲，使用 lxml 快速解析並利用 asynio/coroutines 提高效率。
+* [ptt-scrapy](https://github.com/leVirve-arxiv/ptt-scrapy): 使用 `scrapy` 穩定爬取 PTT 資料。
+* [ptt-viewer](https://github.com/leVirve-arxiv/ptt-viewer): 將取得的資訊透過 Web UI 介面視覺化顯示。
 
 <h2 id="tutorial">爬蟲範例教學: PTT 批踢踢</h2>
 
@@ -31,22 +30,21 @@
 
 本教學範例皆使用 `Python3`，而過程中所需要的套件都會使用 `pip` 來安裝。
 
-- `requests` 發送接收 HTTP 請求及回應
-    - 官方標語：`Python HTTP Requests for Humans™`，這才是真正給人用的介面啊，建議不要直接使用內建的 `urllib` 模組！
+* `requests` 發送接收 HTTP 請求及回應
+  * 官方標語：`Python HTTP Requests for Humans™`，這才是真正給人用的介面啊，建議不要直接使用內建的 `urllib` 模組！
 
-- `requests_html` 用來分析與抓取 html 中的元素
-    - 標語：`Pythonic HTML Parsing for Humans™`，由 Kenneth 大神 (開發上面那個 `requests` 的作者) 寫的專案
-    - 整合 `lxml` 與 `PyQuery`，不用再為了選擇該使用哪個套件解析而困擾，輕鬆自在的交叉使用！
+* `requests_html` 用來分析與抓取 html 中的元素
+  * 標語：`Pythonic HTML Parsing for Humans™`，由 Kenneth 大神 (開發上面那個 `requests` 的作者) 寫的專案
+  * 整合 `lxml` 與 `PyQuery`，不用再為了選擇該使用哪個套件解析而困擾，輕鬆自在的交叉使用！
 
-- (另外選擇) 獨立使用 `lxml` 或 `PyQuery` 來解析 html 中的元素
-    - `PyQuery` 簡單好用(!)，解析速度比之前介紹的 `BeautifulSoup` 快多了！只要學過網頁，會 CSS `selector` 語法就會寫
-    - `lxml` 簡單好用(?)，解析速度快！不過需要先熟悉 `xpath` 語法，但也挺容易學的～
+* (另外選擇) 獨立使用 `lxml` 或 `PyQuery` 來解析 html 中的元素
+  * `PyQuery` 簡單好用(!)，解析速度比之前介紹的 `BeautifulSoup` 快多了！只要學過網頁，會 CSS `selector` 語法就會寫
+  * `lxml` 簡單好用(?)，解析速度快！不過需要先熟悉 `xpath` 語法，但也挺容易學的～
 
     ```bash
     pip install requests requests_html
     pip install lxml
     ```
-
 
 <h3 id="basic">[基礎篇] PTT 爬蟲實際演練：</h3>
 用 PTT 的電影版文章作為我們的爬蟲目標囉！
@@ -55,7 +53,7 @@
 
 *What you see is what you retrieve, but all in text!*
 
-![](img/ptt_page_view.png)
+![ptt_page_view](img/ptt_page_view.png)
 
 使用 `requests.get()` 函式仿造瀏覽器發出 `HTTP` `GET` 方法來「瀏覽」網頁，並取得網址所在頁面的內容；與平時使用瀏覽器看網頁的差異在於沒有渲染出得到的「文字」資訊。
 這個方法的回傳結果是一個 `requests.Response` 包裝起來的物件，而我們現在的目標是取得頁面原始碼即可；而網頁原始碼就在 `resp.text` 中。
@@ -80,7 +78,7 @@ print(resp.text) # result of setp-1
 
 *Interpretate the retrieved text like a browser*
 
-![](img/ptt_console_view.png)
+![ptt_console_view](img/ptt_console_view.png)
 
 一般情況下瀏覽器拿到了網頁原始碼之後，會先解析然後把畫面顯示成我們平常看見的樣子；但這邊我們並不做顯示只想分析原始碼內的資訊。所以用 `requests_html.HTML` 來分析剛剛抓到的文字，在 `HTML()` 的建構式參數放入 `html=`剛剛 `requests.Response` 裡的 html 也就是 `resp.text`。
 
@@ -105,12 +103,11 @@ print(post_entries)  # result of setp-2
 
 *Hey, here's metadata*
 
-
 剛剛說過 `find()` 回傳符合的結果，而這串結果是個 `list` 型態的東西，所以我們用 `for`-loop 來一個一個印出來看看。
 
 而因為 HTML 本來就是具有階層式的標記語言，可以透過觀察剛剛 `開發人員工具` 的 `Elements` 頁籤來判斷到底放在哪個標籤哪一階層裡，例如：標題就在 `<div class='r-ent'>` 這個標籤下的 `<div class='title'>` 的文字裡。所以接下來就是對每個 `entry` 進行近一步的解析，而對應的 `CSS selector` 語法為 `div.title` 並且是操作於 `entry` 物件上。而從上一步驟可以知道，`.find()` 會回傳一串的結果但在這邊 `metadata` (`後設資料`) 的解析中，我們通常最後只會選中唯一元素，所以增加一個 `first=True` 參數讓它直接回傳該結果元素。
 
-![](img/ptt_source_tree.png)
+![ptt_source_tree](img/ptt_source_tree.png)
 
 示範內容抓出：推文數 (push)、標題名稱 (title)、作者 (author)、發文日期 (date) 和文章網址 (link) 等文本內容；而提取（extraction）的相關語法可以參見 `PyQuery` 與 [`requests_html`](http://html.python-requests.org/) 的官方文件都有清楚的介紹。不過在這次範例中其實只會用上幾個常見的程式語法，這邊直接以程式碼呈現。
 
