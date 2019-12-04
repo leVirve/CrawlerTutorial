@@ -92,7 +92,8 @@ def post_content(r: HTMLResponse):
             ele = main.lxml.xpath(
                 f'//span[contains(text(),"{exclude_text}")]')[0]
             ele.getparent().remove(ele)
-        cleaned_html = etree.tostring(main.lxml)
+        cleaned_html = etree.tostring(main.lxml, encoding='UTF-8')
+
 
         cleaned_pq = PyQuery(cleaned_html)
         for exclude_cls in exclude_classes:
