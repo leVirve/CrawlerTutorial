@@ -99,7 +99,7 @@ def post_content(r: HTMLResponse):
         for exclude_cls in exclude_classes:
             cleaned_pq.remove(exclude_cls)
 
-        return cleaned_pq.text()
+        return cleaned_pq.text(squash_space=False)
 
     try:
         main = r.html.find('#main-content', first=True)
