@@ -283,86 +283,64 @@ for page in range(num_page):
 
 #### 第五步：加油好嗎，能不能爬快點
 
-*Come on! Run! Run faster!*
+取得文章列表資訊後，再來就是取得文章（PO 文）內容（post content）了！
+在 metadata 中的 `link` 就是每篇文章的連結，同樣使用 `urllib.parse.urljoin` 串接出完整網址之後發出 HTTP GET 來取得該篇文章的內容。
+我們可以觀察到去抓每篇文章內容的任務是高度重複性的，很適合使用平行化的方法來處理。
 
-<!-- TODO 05/22 -->
-取得文章列表資訊（meta list）後，重要的是接下來取得文章內容（post content）
-在 metadata 中的 `link` 就是每篇文章的連結，所以用 `urllib.parse.urljoin` 串接出完整網址之後發出 request 取得該頁面的內容。但在這裡並沒有做進一步的文章內容解析（parse），並沒有解析文章標題、作者、內容、推文等等，請大家自行練習分析頁面取得資訊。
-
-```python
-post_url = urllib.parse.urljoin(domain, link)
-resp = session.get(post_url)
-```
-
-這一步使用 Python 的內建 library `multiprocessing` 來加速爬蟲的效率！
-
-使用 Python 內建寫好的 `ProcessPool` 來做 high-level 的 multiprocessing programming～這是 Python 中使用 multi-process 最簡單最方便的方法！非常適合這種 SIMD (Single Instruction Multiple Data) 的場景。
-
-```python
-from multiprocessing import Pool
-```
-
-然後在使用時使用 `with` statement 語法讓使用完之後將 process 資源自動釋放，`with Pool(processes=8) as pool`，而中間的 `processes=8` 則代表要開多少的 processes 來完成任務。而 ProcessPool 的用法也很簡單，`pool.map(function, items)`，有點像 functional programming 的概念，將 function 套用在每一個 item 上，最後得出跟 items 一樣數量的結果清單（list）。
+在 Python 中，可以使用 `multiprocessing.Pool` 來做 high-level 的 multiprocessing programming～這是 Python 中使用 multi-process 最簡便的方法！非常適合這種 SIMD (Single Instruction Multiple Data) 的應用場景。使用 `with` statement 語法讓使用完之後將 process 資源自動釋放。而 ProcessPool 的用法也很簡單，`pool.map(function, items)`，有點像 functional programming 的概念，將 function 套用在每一個 item 上，最後得出跟 items 一樣數量的結果列表。
 
 使用在前面介紹的抓取文章內容的任務上：
 
 ```python
-def get_articles(metadata):
-    post_links = [...]  # 一串文章的 URL
-    with Pool(processes=8) as pool:
-        responses = pool.map(fetch_article_content, post_links)
-        return responses
-```
+from multiprocessing import Pool
 
-取得的 `responses` 會是 `list()` of `requests.Response` 的內容，所以最後可以迭代拿出其中的資訊 `resp.text`，以下附上範例程式碼以及操作。
+def get_posts(post_links):
+    with Pool(processes=8) as pool:
+        # 建立 processes pool 並指定 processes 數量為 8
+        # pool 中的 processes 將用於同時發送多個 HTTP GET 請求，以獲取文章內容
+
+        responses = pool.map(session.get, post_links)
+        # 使用 pool.map() 方法在每個 process 上都使用 session.get()，並傳入文章連結列表 post_links 作為參數
+        # 每個 process 將獨立地發送一個 HTTP GET 請求取得相應的文章內容
+
+        return responses
+
+response = session.get(url)
+# 解析文章列表的元素
+metadata = parse_article_entries(elements=response.html.find('div.r-ent'))
+# 解析下一頁的連結
+next_page_url = parse_next_link(controls=response.html.find('.action-bar a.btn.wide'))
+# 一串文章的 URL
+post_links = [urllib.parse.urljoin(url, meta['link']) for meta in metadata]
+
+results = get_posts(post_links)  # list(requests_html.HTML)
+rich.print(results)
+```
 
 ```python
 import time
-from multiprocessing import Pool
-
-
-def get_posts(metadata):
-    # 將所有文章連結收集並串接成完整 URL
-    post_links = [
-        urllib.parse.urljoin(domain, meta['link'])
-        for meta in metadata if 'link' in meta
-    ]
-
-    with Pool(processes=8) as pool:
-        contents = pool.map(fetch, post_links)
-        return contents
 
 if __name__ == '__main__':
-    pages = 5
-
-    start = time.time()
-
-    metadata = get_paged_meta(start_url, num_pages=pages)
-    resps = get_posts(metadata)
-
-    print('花費: %f 秒' % (time.time() - start))
-
-    print('共%d項結果：' % len(resps))
-    for post, resps in zip(metadata, resps):
-        print('{0} {1: <15} {2}, 網頁內容共 {3} 字'.format(
-            post['date'], post['author'], post['title'], len(resps.text)))
+    post_links = [...]
+    ...
+    start_time = time.time()
+    results = get_posts(post_links)
+    print(f'花費: {time.time() - start_time:.6f}秒，共 {len(results)} 篇文章')
 ```
-
-這份程式 [`basic_crawler.py`](src/basic_crawler.py) 中用到 `time.time()` 計時，可以試看看用多少 `process` 和不用 `multiprocessing` 的時間差距～
 
 附上實驗實測結果：
 
 ```bash
-$ python crawler_multiprocess.py  # with 1-process
-花費: 18.773823 秒
+# with 1-process
+花費: 15.686177秒，共 202 篇文章
 
-$ python crawler_multiprocess.py  # with 8-process
-花費: 4.885024 秒
+# with 8-process
+花費: 3.401658秒，共 202 篇文章
 ```
 
-可以看出整體執行速度加速了將近四倍，但是並不一定 `Process` 越多越好，除了必須看 CPU 等硬體規格，主要還是取決於網卡、網速等外部裝置的限制。
+可以看出整體執行速度加速了將近五倍，但並不一定 `Process` 越多越好，除了必須看 CPU 等硬體規格，主要還是取決於網卡、網速等外部裝置的限制。
 
-<!-- **上面的程式碼都可以在 (`src/basic_crawler.py`) 中可以找到！** -->
+**上面的程式碼都可以在 (`src/basic_crawler.py`) 中可以找到！**
 
 ### 進階篇 - PTT 搜尋功能
 
