@@ -2,14 +2,17 @@
 
 - [爬蟲教學 CrawlerTutorial](#爬蟲教學-crawlertutorial)
   - [什麼是網頁爬蟲？](#什麼是網頁爬蟲)
-  - [環境安裝](#環境安裝)
-  - [撰寫 PTT 網頁爬蟲](#撰寫-ptt-網頁爬蟲)
+  - [實例教學 - PTT 批踢踢](#實例教學---ptt-批踢踢)
+    - [環境安裝](#環境安裝)
     - [基礎篇](#基礎篇)
-    - [進階篇](#進階篇)
-    - [API篇](#api篇)
-  - [Related Projects](#related-projects)
-
-下面我會針對每個部分，提供更詳細的說明。
+      - [第一步：所見即所抓，但都是純文字](#第一步所見即所抓但都是純文字)
+      - [第二步：像瀏覽器一樣解析獲取的文字](#第二步像瀏覽器一樣解析獲取的文字)
+      - [第三步：讓我們來看看這些標題訊息吧](#第三步讓我們來看看這些標題訊息吧)
+      - [第四步：現在資料分析時代](#第四步現在資料分析時代)
+      - [第五步：加油好嗎，能不能爬快點](#第五步加油好嗎能不能爬快點)
+    - [進階篇 - PTT 搜尋功能](#進階篇---ptt-搜尋功能)
+    - [撰寫自己的 API - 把 PTT 全包了](#撰寫自己的-api---把-ptt-全包了)
+  - [相關專案](#相關專案)
 
 ## 什麼是網頁爬蟲？
 
@@ -27,14 +30,15 @@
 
 當然，在使用網頁爬蟲時，我們需要遵守網站的使用條款及隱私政策，不可以違反網站的規定進行資訊抓取。同時，為了保障網站的正常運作，我們也需要設計適當的爬取策略，避免對網站造成過大的負荷。
 
-## 環境安裝
+## 實例教學 - PTT 批踢踢
 
-本教學範例使用 Python3 並且會使用 pip 來安裝所需的套件。
+### 環境安裝
 
-以下是需要安裝的套件：
+本教學範例使用 Python3 並且會使用 pip 來安裝所需的套件。以下是需要安裝的套件：
 
 - `requests`：用於發送與接收 HTTP 請求及回應。
-- `beautifulsoup4`：用於分析和抓取 HTML 中的元素。
+- `requests_html`：用於分析和抓取 HTML 中的元素。
+- `rich`：讓資訊精美地輸出到 console，例如顯示美觀的表格。
 - `lxml` 或 `PyQuery`：用於解析 HTML 中的元素。
   - PyQuery 簡單易用，且解析速度比 BeautifulSoup 更快！只要熟悉 CSS selector 語法，就可以輕鬆上手。
   - lxml 解析速度非常快，但需要先熟悉 xpath 語法，不過也不難學習。
@@ -42,319 +46,252 @@
 使用以下指令來安裝這些套件：
 
 ```bash
-pip install requests beautifulsoup4
-pip install lxml  # 如果選擇使用 lxml
-pip install pyquery  # 如果選擇使用 PyQuery
+pip install requests requests_html rich lxml PyQuery
 ```
-
-<!-- TODO -->
-
-## 撰寫 PTT 網頁爬蟲
-
-在這一部分，你可以提供 PTT 網頁爬蟲的範例，並包括基礎和進階的示例。
 
 ### 基礎篇
 
-在基礎篇中，你可以簡單介紹如何從 PTT 網頁上收集資料，例如文章標題、作者和時間等。你可以提供一些示例代碼，並解釋它們的作用和工作原理。
+在基礎篇中，會簡單介紹如何從 PTT 網頁上收集資料，例如文章標題、作者和時間等。
 
-### 進階篇
+以下用 PTT 的看版文章作為我們的爬蟲目標囉！
 
-在進階篇中，你可以介紹如何使用 PTT 搜尋功能來獲取更精確的
+#### 第一步：所見即所抓，但都是純文字
 
-### API篇
-
-## Related Projects
-
-* [dcard-spider](https://github.com/leVirve/dcard-spider): 透過 Dcard API 抓取/下載資料的高效能爬蟲。
-* [ptt-spider](https://github.com/leVirve-arxiv/ptt-spider): PTT 高效能爬蟲，使用 lxml 快速解析並利用 asynio/coroutines 提高效率。
-* [ptt-scrapy](https://github.com/leVirve-arxiv/ptt-scrapy): 使用 `scrapy` 穩定爬取 PTT 資料。
-* [ptt-viewer](https://github.com/leVirve-arxiv/ptt-viewer): 將取得的資訊透過 Web UI 介面視覺化顯示。
-
-
-<h3 id="basic">[基礎篇] PTT 爬蟲實際演練：</h3>
-用 PTT 的電影版文章作為我們的爬蟲目標囉！
-
-<h4 id="basic-step1">第一步：所看即所抓</h4>
-
-*What you see is what you retrieve, but all in text!*
-
-![ptt_page_view](img/ptt_page_view.png)
-
-使用 `requests.get()` 函式仿造瀏覽器發出 `HTTP` `GET` 方法來「瀏覽」網頁，並取得網址所在頁面的內容；與平時使用瀏覽器看網頁的差異在於沒有渲染出得到的「文字」資訊。
-這個方法的回傳結果是一個 `requests.Response` 包裝起來的物件，而我們現在的目標是取得頁面原始碼即可；而網頁原始碼就在 `resp.text` 中。
-
-但目前的做法直接套用到 Gossiping 板時會發生錯誤，原因是因為在"第一次"瀏覽八卦版時會先有一個確認年齡是否滿十八歲的頁面，而當點擊過後瀏覽器會記錄下 `cookies` 所以下次再次進入時就不會在被詢問(可以使用無痕打開測試看看八卦版首頁)。所以對爬蟲而言，只要把該筆特殊的 `cookies` 記錄下來，那麼在瀏覽時就能假裝已經通過滿十八歲測試。
+在進行網頁爬蟲時，我們使用 `requests.get()` 函式來模擬瀏覽器發送 HTTP GET 請求來「瀏覽」網頁。這個函式會返回一個 `requests.Response` 物件，其中包含了網頁的回應內容。然而，需要注意的是，這個內容是以純文字的原始碼形式呈現，沒有經過瀏覽器的渲染。我們可以透過 `response.text` 屬性來取得。
 
 ```python
 import requests
 
-def fetch(url):
-    response = requests.get(url)
-    response = requests.get(url, cookies={'over18': '1'})  # 一直向 server 回答滿 18 歲了 !
-    return response
-
-url = 'https://www.ptt.cc/bbs/movie/index.html'
-resp = fetch(url)  # step-1
-
-print(resp.text) # result of setp-1
+# 發送 HTTP GET 請求並獲取網頁內容
+url = 'https://www.ptt.cc/bbs/Gossiping/index.html'
+response = requests.get(url)
+print(response.text)
 ```
 
-<h4 id="basic-step2">第二步：說說看你看到了什麼？</h4>
+![ptt_page_view](img/ptt_page_view.png)
 
-*Interpretate the retrieved text like a browser*
+在後續使用中我們會需要用到 `requests_html` 來擴增 `requests` 除了能像瀏覽器一樣瀏覽，也需要解析 HTML 網頁，`requests_html` 會將純文字的 `response.text` 原始碼包進 `requests_html.HTML` 方便後面的使用。改寫也非常簡單使用 `session.get()` 來替代上述的 `requests.get()`。
+
+```python
+from requests_html import HTMLSession
+
+# 建立 HTML 會話
+session = HTMLSession()
+# 發送 HTTP GET 請求並獲取網頁內容
+response = session.get(url)
+print(response.text)
+```
+
+然而，當我們嘗試套用這個方法到八卦版 (Gossiping) 時，可能會遇到錯誤。這是因為在第一次瀏覽八卦版時，網站會確認年齡是否已滿十八歲；當我們點擊確認後，瀏覽器會記錄相應的 cookies，使得下次再次進入時就不會再次詢問（你可以試著使用無痕模式打開測試看看八卦版首頁）。然而，對於網頁爬蟲來說，我們需要把該筆特殊的 cookies 記錄下來，這樣在瀏覽時就能假裝已通過十八歲的測試。
+
+```python
+import requests
+
+url = 'https://www.ptt.cc/bbs/Gossiping/index.html'
+session = HTMLSession()
+session.cookies.set('over18', '1')  # 向網站回答滿 18 歲了 !
+
+# 發送 HTTP GET 請求並獲取網頁內容
+response = session.get(url)
+print(response.text)
+```
+
+#### 第二步：像瀏覽器一樣解析獲取的文字
+
+接下來，我們可以使用 `response.html.find()` 方法來進行元素的定位，並使用 CSS 選擇器來指定目標元素。在這個步驟中，我們可以觀察到在 PTT 網頁版中，每篇文章的標題訊息都位於具有 `r-ent` 類別的 `div` 標籤中。因此，我們可以使用 CSS 選擇器 `div.r-ent` 來定位這些元素。
 
 ![ptt_console_view](img/ptt_console_view.png)
 
-一般情況下瀏覽器拿到了網頁原始碼之後，會先解析然後把畫面顯示成我們平常看見的樣子；但這邊我們並不做顯示只想分析原始碼內的資訊。所以用 `requests_html.HTML` 來分析剛剛抓到的文字，在 `HTML()` 的建構式參數放入 `html=`剛剛 `requests.Response` 裡的 html 也就是 `resp.text`。
+使用 `response.html.find()` 方法會回傳一個符合條件的元素列表，所以我們可以使用 `for` 迴圈來逐個處理這些元素。在每個元素內部，我們可以使用 `element.find()` 方法來進一步解析元素，並使用 CSS 選擇器來指定要提取的資訊。在這個範例中，我們可以使用 CSS 選擇器 `div.title` 來定位標題元素。同樣地，我們可以使用 `element.text` 屬性來獲取元素的文字內容。
 
-而藉由我們打開瀏覽器查看網頁原始碼 (可用`F12` 開發人員工具) 得知 PTT 網頁版中，每一篇文章的標題訊息皆放在 `class="r-ent"` 的 `div` 標籤裡。這裡我們使用到 `find` 方法與 CSS `selector` 語法來操作 `HTML()` 物件並指定尋找目標，找到之後的結果是一串文章列表資訊。那在 CSS 中，想要找到 `class` 為 `"r-ent"` 且元素為 `div` 的語法是 `div.r-ent`，在操作 `find()` 時直接將一模一樣的語法字串放進去即可達成目標。
+以下是使用 `requests_html` 的範例程式碼：
 
 ```python
-from requests_html import HTML
+from requests_html import HTMLSession
 
-def parse_article_entries(doc):
-    html = HTML(html=doc)
-    post_entries = html.find('div.r-ent')
-    return post_entries
+# 建立 HTML 會話
+session = HTMLSession()
+session.cookies.set('over18', '1')  # 向網站回答滿 18 歲了 !
+# 發送 HTTP GET 請求並獲取網頁內容
+response = session.get(url)
 
-url = 'https://www.ptt.cc/bbs/movie/index.html'
-resp = fetch(url)  # step-1
-post_entries = parse_article_entries(resp.text)  # step-2
-
-print(post_entries)  # result of setp-2
+# 使用 CSS 選擇器定位目標元素
+elements = response.html.find('div.r-ent')
+for element in elements:
+    # 提取資訊...
 ```
 
-<h4 id="basic-step3">第三步：所以我說那個標題資訊呢？</h4>
+#### 第三步：讓我們來看看這些標題訊息吧
 
-*Hey, here's metadata*
-
-剛剛說過 `find()` 回傳符合的結果，而這串結果是個 `list` 型態的東西，所以我們用 `for`-loop 來一個一個印出來看看。
-
-而因為 HTML 本來就是具有階層式的標記語言，可以透過觀察剛剛 `開發人員工具` 的 `Elements` 頁籤來判斷到底放在哪個標籤哪一階層裡，例如：標題就在 `<div class='r-ent'>` 這個標籤下的 `<div class='title'>` 的文字裡。所以接下來就是對每個 `entry` 進行近一步的解析，而對應的 `CSS selector` 語法為 `div.title` 並且是操作於 `entry` 物件上。而從上一步驟可以知道，`.find()` 會回傳一串的結果但在這邊 `metadata` (`後設資料`) 的解析中，我們通常最後只會選中唯一元素，所以增加一個 `first=True` 參數讓它直接回傳該結果元素。
+在前一步驟中，我們使用了 `response.html.find()` 方法來定位每個文章的元素。這些元素是以 `div.r-ent` 的 CSS 選擇器定位到的。
+你可以使用開發者工具 (Developer Tools) 功能來觀察網頁的元素結構。打開網頁後按下 F12 鍵，將顯示一個開發者工具面板，其中包含了網頁的 HTML 結構和其他資訊。
 
 ![ptt_source_tree](img/ptt_source_tree.png)
 
-示範內容抓出：推文數 (push)、標題名稱 (title)、作者 (author)、發文日期 (date) 和文章網址 (link) 等文本內容；而提取（extraction）的相關語法可以參見 `PyQuery` 與 [`requests_html`](http://html.python-requests.org/) 的官方文件都有清楚的介紹。不過在這次範例中其實只會用上幾個常見的程式語法，這邊直接以程式碼呈現。
+使用開發者工具，你可以使用滑鼠指標在網頁上選擇特定的元素，然後在開發者工具面板中查看該元素的 HTML 結構、CSS 屬性等詳細資訊。這樣可以幫助你確定要定位的元素和相應的 CSS 選擇器。
+另外，或許會發現怎麼程式有時候會出錯啊？！看看網頁版發現原來當該頁面中有文章被刪除時，網頁上的 `＜本文已被刪除＞` 這個元素的原始碼 `結構` 和原本不一樣哇！所以我們可以進一步強化來處理文章被刪除的情況。
+
+現在，讓我們回到使用 `requests_html` 進行資訊提取的範例程式碼：
 
 ```python
-def parse_article_meta(entry):
-    '''
-    每筆資料都存在 dict() 類型中：key-value paird data
-    '''
-    return {
-        'title': entry.find('div.title', first=True).text,
-        'push': entry.find('div.nrec', first=True).text,
-        'date': entry.find('div.date', first=True).text,
-        'author': entry.find('div.author', first=True).text,
-        'link': entry.find('div.title > a', first=True).attrs['href'],
-    }
+import re
 
-url = 'https://www.ptt.cc/bbs/movie/index.html'
-resp = fetch(url)  # step-1
-post_entries = parse_article_entries(resp.text)  # step-2
+# 使用 CSS 選擇器定位目標元素
+elements = response.html.find('div.r-ent')
 
-for entry in post_entries:
-    meta = parse_article_meta(entry)
-    print(meta_article)  # result of setp-3
+# 逐個處理每個元素
+for element in elements:
+    # 可能會遇上文章已刪除的狀況，所以用例外處理 try-catch 包起來
+    try:
+        push = element.find('.nrec', first=True).text  # 推文數
+        mark = element.find('.mark', first=True).text  # 標記
+        title = element.find('.title', first=True).text  # 標題
+        author = element.find('.meta > .author', first=True).text  # 作者
+        date = element.find('.meta > .date', first=True).text  # 發文日期
+        link = element.find('.title > a', first=True).attrs['href']  # 文章網址
+    except AttributeError:
+        # 處理已經刪除的文章資訊
+        if '(本文已被刪除)' in title:
+            # e.g., "(本文已被刪除) [haudai]"
+            match_author = re.search('\[(\w*)\]', title)
+            if match_author:
+                author = match_author.group(1)
+        elif re.search('已被\w*刪除', title):
+            # e.g., "(已被cappa刪除) <edisonchu> op"
+            match_author = re.search('\<(\w*)\>', title)
+            if match_author:
+                author = match_author.group(1)
 
-    # pretty_print(meta['push'], meta['title'], meta['date'], meta['author'])  # for below results
+    print('推文數:', push)
+    print('標記:', mark)
+    print('標題:', title)
+    print('作者:', author)
+    print('發文日期:', date)
+    print('文章網址:', link)
+    print('---')
 ```
 
-<h4>執行結果</h4>
+*輸出文字處理：*
 
-![crawler_3_snap](img/crawler_3_snap.png)
+這邊我們可以利用 `rich` 顯示精美的輸出，首先建立起 `rich` 的表格物件，然後將上述範例程式碼迴圈中的 `print` 替換成 `add_row` 到表格。最後，我們使用 `rich` 的 `print` 函式才能正確將表格輸出到終端。
 
-*特殊處理：* 沒事多寫點程式碼啊！把天賦通通點在美化上吧～
-(字元寬度處理參考自 [urwid](https://github.com/urwid/urwid/blob/master/urwid/old_str_util.py))
+執行結果
 
-把這段程式碼 import 到剛剛的 [`basic_crawler.py`](src/basic_crawler.py) 裡，並把 `print` 換成 `pretty_print`。漂亮的輸出就出現囉！
+```python
+import rich
+import rich.table
 
-``` python
-widths = [
-        (126,    1), (159,    0), (687,     1), (710,   0), (711,   1),
-        (727,    0), (733,    1), (879,     0), (1154,  1), (1161,  0),
-        (4347,   1), (4447,   2), (7467,    1), (7521,  0), (8369,  1),
-        (8426,   0), (9000,   1), (9002,    2), (11021, 1), (12350, 2),
-        (12351,  1), (12438,  2), (12442,   0), (19893, 2), (19967, 1),
-        (55203,  2), (63743,  1), (64106,   2), (65039, 1), (65059, 0),
-        (65131,  2), (65279,  1), (65376,   2), (65500, 1), (65510, 2),
-        (120831, 1), (262141, 2), (1114109, 1),
-]
+# 建立 `rich` 表格物件，設定不顯示表頭
+table = rich.table.Table(show_header=False)
 
+# 逐個處理每個元素
+for element in elements:
+    ...
+    # 將每個結果新增到表格中
+    table.add_row(push, title, date, author)
 
-def calc_len(string):
-    def chr_width(o):
-        global widths
-        if o == 0xe or o == 0xf:
-            return 0
-        for num, wid in widths:
-            if o <= num:
-                return wid
-        return 1
-    return sum(chr_width(ord(c)) for c in string)
-
-
-def pretty_print(push, title, date, author):
-    pattern = '%3s\t%s%s%s\t%s'
-    padding = ' ' * (50 - calc_len(title))
-    print(pattern % (push, title, padding, date, author))
-
+# 使用 rich 套件的 print 函式輸出表格
+rich.print(table)
 ```
 
-<h4 id="basic-step4">第四步：現在資料分析時代欸！</h4>
+![step4_result_rich_table](img/step3_result_rich_table.png)
 
-*Give me data!*
+#### 第四步：現在資料分析時代
 
-
-好，那就再用 `觀察法` 模式，去找找上一頁的連結在哪裡？
-找到了嗎？不是問你頁面上的按鈕在哪裡喔！是看 source tree 啊！
-
-![](img/ptt_source_tree_page_control.png)
-
-相信都有發現了，關於頁面跳轉的超連結就放在 `<div class='action-bar>` 的 `<a class='btn wide'>` 裡，所以我們可以像這樣抓到他們：
+現在，我們將使用「觀察法」來找出上一頁的連結。不，我不是指問你瀏覽器上的按鈕在哪裡，而是要看開發者工具中的「source tree」。我相信你已經發現了，關於頁面跳轉的超連結位於 `<div class="action-bar">` 的 `<a class="btn wide">` 元素中。因此，我們可以像這樣提取它們：
 
 ```python
 # 控制頁面選項: 最舊/上頁/下頁/最新
-controls = html.find('.action-bar a.btn.wide')
-
-# note: 當然也有其他更簡單或更複雜(?)的寫法
-# 如：controls = html.find('a.btn')
-# 不過這邊我們為了保證精準抓到元素，採用相對穩定存在的元素層層遞進定位
+controls = response.html.find('.action-bar a.btn.wide')
 ```
 
-而我們需要的是`上一頁`的功能，為什麼呢？因為 PTT 是最新的文章顯示在前面啊～所以要挖資料必須往前翻。
+![source_page_control](img/ptt_source_tree_page_control.png)
+
+而我們需要的是「上頁」的功能，為什麼呢？因為 PTT 是最新的文章顯示在前面啊～所以要挖資料必須往前翻。
 
 那怎麼使用呢？先去抓出 `control` 中第二個(index 為 1)的 `href`，然後他可能長這樣 `/bbs/movie/index3237.html`；而完整的網址 (URL) 必須要有 `https://www.ptt.cc/` (domain url) 開頭，所以用 `urljoin()` (或是字串直接相接) 把 Movie 首頁連結和新的 link 比對合併成完整的 URL！
 
 ```python
-link = controls[1].get('href')
-page_url = urllib.parse.urljoin('https://www.ptt.cc/', link)
-```
-
-另外，或許會發現怎麼前面的程式有時候會出錯啊？！看看網頁版發現原來當該頁面中有文章被刪除時，網頁上的 `＜本文已被刪除＞` 這個元素的原始碼 `結構` 和原本不一樣哇！所以我們可以對 `Step3` 的 parser 進行進一步的強化來李文章被刪除的情況。
-
-```python
-def parse_article_meta(ent):
-    ''' Step-3 (revised): parse the metadata in article entry '''
-    # 基本要素都還在
-    meta = {
-        'title': ent.find('div.title', first=True).text,
-        'push': ent.find('div.nrec', first=True).text,
-        'date': ent.find('div.date', first=True).text,
-    }
-
-    try:
-        # 正常狀況取得資料
-        meta['author'] = ent.find('div.author', first=True).text
-        meta['link'] = ent.find('div.title > a', first=True).attrs['href']
-    except AttributeError:
-        # 但碰上文章被刪除時，就沒有辦法像原本的方法取得 作者 跟 連結
-        if '(本文已被刪除)' in meta['title']:
-            # e.g., "(本文已被刪除) [haudai]"
-            match_author = re.search('\[(\w*)\]', meta['title'])
-            if match_author:
-                meta['author'] = match_author.group(1)
-        elif re.search('已被\w*刪除', meta['title']):
-            # e.g., "(已被cappa刪除) <edisonchu> op"
-            match_author = re.search('\<(\w*)\>', meta['title'])
-            if match_author:
-                meta['author'] = match_author.group(1)
-    return meta
-
-    # 最終仍回傳統一的 dict() 形式 paired data
-    return meta
-```
-
-
-現在我們將函式重新定義，讓：
-- `get_metadata_from(url)`:
-抓取一頁 (某頁面 URL) 中所有的文章的 metadata，並回傳一串 `key-value` 類型的資料及下一頁的 URL。
-- `get_paged_meta(num_pages)`:
-抓取最新的 `num_pages` 個頁面，並指派 `get_paged_meta` 去抓每頁面中的資料，把每一串資料合併成一大串後回傳。
-
-而 `get_metadata_from(url)` 和 `get_paged_meta(num_pages)` 回傳的就是這樣的一串資料：
-```python
-[
-{'push': '4', 'title': '[新聞] 侯孝賢：「一個導演，沒有自覺，就不用玩', 'date': ' 9/07', 'author': 'soulx', 'link': '/bbs/movie/M.1441633354.A.961.html'},
-{'push': '', 'title': '[請益] 倖存者（The Remaining)的結局', 'date': ' 9/07', 'author': 'Takuri', 'link': '/bbs/movie/M.1441636396.A.D64.html'},
-{'push': '', 'title': '本文已被刪除', 'date': ' 9/07', 'author': '-', 'link': None},
-{'push': '1', 'title': '[好雷] Hero電影版', 'date': ' 9/07', 'author': 'peichuan', 'link': '/bbs/movie/M.1441637098.A.854.html'},
-{'push': '', 'title': '[新聞] 「夢想海洋」主題曲 魏德聖王大陸力挺', 'date': ' 9/07', 'author': 'fireguard119', 'link': '/bbs/movie/M.1441637150.A.DA1.html'},
-{'push': '', 'title': '[贈票] 未知之境 餘鬼狂歡～2015女性影展特映會', 'date': ' 9/07', 'author': 'epmt', 'link': '/bbs/movie/M.1441637513.A.14E.html'},
-{'push': '', 'title': '[問片] 問幾部港片/國片', 'date': ' 9/07', 'author': 'ogcxd', 'link': '/bbs/movie/M.1441637531.A.E5A.html'},
-...
-]
-```
-
-另外要說明的是 `from utils import pretty_print`，把剛剛 **Step3** 那個漂亮的輸出功能數十行的程式碼放到同目錄底下的新檔案 `utils.py` 中 (檔案名字你喜歡就好，只要記得 `from xxx import pretty_print` 要記得一起改)，然後在這邊 `import` (相當於 C語言中的 include) 就能繼續沿用功能！
-
-```python
 import urllib.parse
-from utils import pretty_print
 
-def get_metadata_from(url):
-
-    def parse_next_link(doc):
-        html = HTML(html=doc)
-        controls = html.find('.action-bar a.btn.wide')
-        link = controls[1].attrs.get('href')
-        return urllib.parse.urljoin(domain, link)
-
-    resp = fetch(url)
-    post_entries = parse_article_entries(resp.text)
-    next_link = parse_next_link(resp.text)
-
-    metadata = [parse_article_meta(entry) for entry in post_entries]
-    return metadata, next_link
-
-def get_paged_meta(url, num_pages):
-    collected_meta = []
-
-    for _ in range(num_pages):
-        posts, link = get_metadata_from(url)
-        collected_meta += posts
-        url = urllib.parse.urljoin(domain, link)
-
-    return collected_meta
-
-start_url = 'https://www.ptt.cc/bbs/movie/index.html'
-metadata = get_paged_meta(start_url, num_pages=5)
-for meta in metadata:
-    pretty_print(meta['push'], meta['title'], meta['date'], meta['author'])
+def parse_next_link(controls):
+    link = controls[1].attrs['href']
+    next_page_url = urllib.parse.urljoin('https://www.ptt.cc/', link)
+    return next_page_url
 ```
 
-Output:
+現在我們將函式重新整理一下方便後續說明，讓 [第三步：讓我們來看看這些標題訊息吧](#第三步讓我們來看看這些標題訊息吧) 中處理每個文章元素的範例變成獨立的函式 `parse_article_entries(elements)`
 
-```bash
-...
-
- 10     [討論] 心目中不可取代的電影                    5/15  ot3973
- 99     [討論] 哪些遊戲劇情很適合拍成電影               5/15  ken6303
- 32     [情報] 皇后樂團《波希米亞狂想曲》新預告          5/15  soaping
-        (本文已被刪除) [gp03sp]                        5/15  gp03sp
-        [新聞] 珍芳達：想和昆汀塔倫提諾合作              5/15  qpr322
-  3     [ 好雷] 死侍                                   5/15  nwtk
-        (本文已被刪除) [lgng66133]                      5/15  lgng66133
- 17     [超級好雷]死侍2 開創新時代的 先鋒                5/15  jamie1995
-  爆    [討論] 國外網友對復仇者聯盟4的預測(可能有巨雷     5/15  KuoChingYa
- 13     [好雷雷] 死侍2 認真滿喜歡                       5/15  asagiyuu
- 12     [好雷]　死侍　美中不足的地方                    5/15  ckshchen
- 23     [請益] 死侍2跟1哪個比較血腥？                   5/15  iredeem
-
+```python
+# 解析該頁文章列表中的元素
+def parse_article_entries(elements):
+    results = []
+    for element in elements:
+        try:
+            push = element.find('.nrec', first=True).text
+            mark = element.find('.mark', first=True).text
+            title = element.find('.title', first=True).text
+            author = element.find('.meta > .author', first=True).text
+            date = element.find('.meta > .date', first=True).text
+            link = element.find('.title > a', first=True).attrs['href']
+        except AttributeError:
+            # 處理文章被刪除的情況
+            if '(本文已被刪除)' in title:
+                match_author = re.search('\[(\w*)\]', title)
+                if match_author:
+                    author = match_author.group(1)
+            elif re.search('已被\w*刪除', title):
+                match_author = re.search('\<(\w*)\>', title)
+                if match_author:
+                    author = match_author.group(1)
+        # 將解析結果加到回傳的列表中
+        results.append({'push': push, 'mark': mark, 'title': title,
+                        'author': author, 'date': date, 'link': link})
+    return results
 ```
 
-<h4 id="basic-step5">第五步：加油好嗎，能不能爬快點！</h4>
+接下來，我們就可以處理多頁內容
+
+```python
+# 起始首頁
+url = 'https://www.ptt.cc/bbs/movie/index.html'
+# 想要收集的頁數
+num_page = 10
+
+for page in range(num_page):
+    # 發送 GET 請求並獲取網頁內容
+    response = session.get(url)
+    # 解析文章列表的元素
+    results = parse_article_entries(elements=response.html.find('div.r-ent'))
+    # 解析下一個連結
+    next_page_url = parse_next_link(controls=response.html.find('.action-bar a.btn.wide'))
+
+    # 建立表格物件
+    table = rich.table.Table(show_header=False, width=120)
+    for result in results:
+        table.add_row(*list(result.values()))
+    # 輸出表格
+    rich.print(table)
+
+    # 更新下面一位 URL~
+    url = next_page_url
+```
+
+*輸出結果：*
+
+![step4_result_rich_table](img/step4_result_rich_tables.png)
+
+#### 第五步：加油好嗎，能不能爬快點
 
 *Come on! Run! Run faster!*
 
+<!-- TODO 05/22 -->
 取得文章列表資訊（meta list）後，重要的是接下來取得文章內容（post content）
 在 metadata 中的 `link` 就是每篇文章的連結，所以用 `urllib.parse.urljoin` 串接出完整網址之後發出 request 取得該頁面的內容。但在這裡並沒有做進一步的文章內容解析（parse），並沒有解析文章標題、作者、內容、推文等等，請大家自行練習分析頁面取得資訊。
 
 ```python
-url = urllib.parse.urljoin(domain, link)
-resp = requests.get(url)
-
-# 文章 html 在 resp.text 中
+post_url = urllib.parse.urljoin(domain, link)
+resp = session.get(post_url)
 ```
 
 這一步使用 Python 的內建 library `multiprocessing` 來加速爬蟲的效率！
@@ -364,6 +301,7 @@ resp = requests.get(url)
 ```python
 from multiprocessing import Pool
 ```
+
 然後在使用時使用 `with` statement 語法讓使用完之後將 process 資源自動釋放，`with Pool(processes=8) as pool`，而中間的 `processes=8` 則代表要開多少的 processes 來完成任務。而 ProcessPool 的用法也很簡單，`pool.map(function, items)`，有點像 functional programming 的概念，將 function 套用在每一個 item 上，最後得出跟 items 一樣數量的結果清單（list）。
 
 使用在前面介紹的抓取文章內容的任務上：
@@ -424,19 +362,18 @@ $ python crawler_multiprocess.py  # with 8-process
 
 可以看出整體執行速度加速了將近四倍，但是並不一定 `Process` 越多越好，除了必須看 CPU 等硬體規格，主要還是取決於網卡、網速等外部裝置的限制。
 
-**上面的程式碼都可以在 (`src/basic_crawler.py`) 中可以找到！**
+<!-- **上面的程式碼都可以在 (`src/basic_crawler.py`) 中可以找到！** -->
 
-
-<h3 id="advanced">[進階篇] PTT 搜尋功能：</h3>
+### 進階篇 - PTT 搜尋功能
 
 **PTT Web 新功能：搜尋！** 終於可以在網頁版使用了
 
 一樣使用 PTT 的電影版作為我們的爬蟲目標囉！在新版功能中可以搜尋的內容包含，
 
-* 標題關鍵字 (title keywords)
-* 相同標題文章 (thread title)
-* 同作者文章 (author)
-* 推文數多的文章 (recommend)
+- 標題關鍵字 (title keywords)
+- 相同標題文章 (thread title)
+- 同作者文章 (author)
+- 推文數多的文章 (recommend)
 
 ![](img/ptt_post_related.png)
 
@@ -479,7 +416,7 @@ resp = requests.get(search_endpoint_url, params={'q': 'author:rogerwang86'})
 resp = requests.get(search_endpoint_url, params={'q': 'recommend:50'})
 ```
 
-* PTT Web parsing 這些參數的 function 原始碼
+- PTT Web parsing 這些參數的 function 原始碼
 
     ![](img/ptt_source_parse_query.png)
 
@@ -499,7 +436,15 @@ metadata = [parse_article_meta(entry) for entry in post_entries]  # [沿用]
 resp = requests.get(search_endpoint_url, params={'q': 'recommend:50', 'page': 2})
 ```
 
-
-<h3 id="package">[API篇] - 我把 PTT 全包了</h3>
+### 撰寫自己的 API - 把 PTT 全包了
 
 將前面所有的功能通通整合進 [ptt-parser](ptt-parser)，可以提供 command-line 功能以及可程式化呼叫的 API 形式的 `爬蟲`。
+
+## 相關專案
+
+- [dcard-spider](https://github.com/leVirve/dcard-spider): 透過 Dcard API 抓取/下載資料的高效能爬蟲。
+- [ptt-spider](https://github.com/leVirve-arxiv/ptt-spider): PTT 高效能爬蟲，使用 lxml 快速解析並利用 asynio/coroutines 提高效率。
+- [ptt-scrapy](https://github.com/leVirve-arxiv/ptt-scrapy): 使用 `scrapy` 穩定爬取 PTT 資料。
+- [ptt-viewer](https://github.com/leVirve-arxiv/ptt-viewer): 將取得的資訊透過 Web UI 介面視覺化顯示。
+
+<a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="創用 CC 授權條款" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" /></a><br />本著作由<a xmlns:cc="http://creativecommons.org/ns#" href="https://github.com/leVirve" property="cc:attributionName" rel="cc:attributionURL">leVirve</a>製作，以<a rel="license" href="http://creativecommons.org/licenses/by/4.0/">創用CC 姓名標示 4.0 國際 授權條款</a>釋出。
